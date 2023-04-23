@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+option go_package = "proto/mafia-game";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+message User {
+    string name = 1;
+    Roles role = 2;
+}
+
+enum Roles {
+    Mafia = 0;
+    Commissioner = 1;
+    Civilian = 2;
+    Undefined = 3;
+}
+
+message SetNameRequest {
+    User user = 1;
+    string new_name = 2;
+}
+
+message SetNameResponse {
+    bool success = 1;
+}
+
+message ConnectToSessionResponse {
+    // repeated User connected_users = 1;
+    bool success = 2;
+    // bool game_started = 3;
+    // Roles role = 4;
+}
+
+message LeaveSessionRequest {
+    User user = 1;
+}
+
+message LeaveSessionResponse {
+    bool success = 1;
+}
+
+enum State {
+    connected = 0;
+    left = 1;
+}
+
+message Connection {
+    string login = 1;
+    State state = 2;
+    google.protobuf.Timestamp time = 3;
+}
+
+service MafiaService {
+    rpc ConnectToSession(User) returns (ConnectToSessionResponse) {}
+    rpc LeaveSession(LeaveSessionRequest) returns (LeaveSessionResponse) {}
+    rpc ListConnections(google.protobuf.Empty) returns (stream Connection) {}
+}
