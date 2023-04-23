@@ -29,19 +29,18 @@ func (s *mafiaServer) LeaveSession(ctx context.Context, request *proto.LeaveSess
 		channel <- event
 	}
 	fmt.Printf("Bye %v!\n", request.User.Name)
+	close(s.channels[request.User.Name])
 	return &proto.LeaveSessionResponse{Success: success}, nil
 }
 
 func (s *mafiaServer) ListConnections(req *proto.ListConnectionsRequest, stream proto.MafiaService_ListConnectionsServer) error {
 	msgChannel := make(chan mafia_domain.Event, len(s.game.Events)+1)
-	ind := len(s.channels)
-	s.channels = append(s.channels, msgChannel)
+	s.channels[req.Login] = msgChannel
 	for i := 0; i < len(s.game.Events); i++ {
 		msgChannel <- s.game.Events[i]
 	}
 	defer func() {
-		s.channels[ind] = s.channels[len(s.channels)-1]
-		s.channels = s.channels[:len(s.channels)-1]
+		delete(s.channels, req.Login)
 	}()
 	for {
 		select {
@@ -58,6 +57,5 @@ func (s *mafiaServer) ListConnections(req *proto.ListConnectionsRequest, stream 
 				return err
 			}
 		}
-		// todo: handle closure of msgChannel
 	}
 }

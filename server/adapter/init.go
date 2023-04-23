@@ -8,12 +8,12 @@ import (
 type mafiaServer struct {
 	proto.UnimplementedMafiaServiceServer
 	game     *mafia_domain.MafiaGame
-	channels []chan mafia_domain.Event
+	channels map[string]chan mafia_domain.Event
 }
 
 func New() *mafiaServer {
 	return &mafiaServer{
 		game:     mafia_domain.NewGame(),
-		channels: make([]chan mafia_domain.Event, 0),
+		channels: make(map[string]chan mafia_domain.Event),
 	}
 }
