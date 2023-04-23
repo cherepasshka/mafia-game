@@ -6,7 +6,6 @@ import (
 
 	// "fmt"
 
-	empty "github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	// "google.golang.org/protobuf/types/known/timestamppb"
 
@@ -33,7 +32,7 @@ func (s *mafiaServer) LeaveSession(ctx context.Context, request *proto.LeaveSess
 	return &proto.LeaveSessionResponse{Success: success}, nil
 }
 
-func (s *mafiaServer) ListConnections(nop *empty.Empty, stream proto.MafiaService_ListConnectionsServer) error {
+func (s *mafiaServer) ListConnections(req *proto.ListConnectionsRequest, stream proto.MafiaService_ListConnectionsServer) error {
 	msgChannel := make(chan mafia_domain.Event, len(s.game.Events)+1)
 	ind := len(s.channels)
 	s.channels = append(s.channels, msgChannel)

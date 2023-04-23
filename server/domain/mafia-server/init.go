@@ -5,10 +5,7 @@ import (
 	"time"
 
 	proto "soa.mafia-game/proto/mafia-game"
-)
-
-const (
-	party_size = 4
+	"soa.mafia-game/server/domain/mafia-server/models/party"
 )
 
 type Event struct {
@@ -18,23 +15,16 @@ type Event struct {
 }
 
 type MafiaGame struct {
-	party              map[string]int
-	non_full_party_ids []int
-	party_size         []int
-	users              []string
-	party_cnt          int
+	distribution party.PartiesDistribution
+	users        []string
 
 	Events []Event
 }
 
 func NewGame() *MafiaGame {
 	game := &MafiaGame{
-		party_size:         make([]int, 1),
-		non_full_party_ids: make([]int, 1),
-		party_cnt:          1,
-		party:              make(map[string]int),
+		distribution: party.New(),
+		users:        make([]string, 0),
 	}
-	game.non_full_party_ids[0] = 0
-	game.party_size[0] = 0
 	return game
 }

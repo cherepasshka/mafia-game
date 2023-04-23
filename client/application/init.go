@@ -10,7 +10,6 @@ import (
 
 	domain_client "soa.mafia-game/client/domain/mafia-client"
 
-	empty "github.com/golang/protobuf/ptypes/empty"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
@@ -57,7 +56,7 @@ func (app *mafiaApplication) Start(host string, port int) error {
 	// ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	// defer cancel()
 	ctx := context.Background()
-	rsp, err := app.grpcClient.ListConnections(ctx, &empty.Empty{})
+	rsp, err := app.grpcClient.ListConnections(ctx, &proto.ListConnectionsRequest{Login: login})
 	if err != nil {
 		return err
 	}
