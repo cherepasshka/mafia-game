@@ -9,9 +9,10 @@ import (
 )
 
 type Event struct {
-	User   string
-	Status proto.State
-	Time   time.Time
+	User             string
+	Status           proto.State
+	Time             time.Time
+	SessionReadiness bool
 }
 
 type MafiaGame struct {

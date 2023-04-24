@@ -47,3 +47,27 @@ func (g *MafiaGame) RemovePlayer(login string) (bool, Event) {
 	g.Events = append(g.Events, Event{User: login, Status: proto.State_left, Time: time.Now()})
 	return true, g.Events[len(g.Events)-1]
 }
+
+func (g *MafiaGame) SessionReady(user string) bool {
+	return g.distribution.IsFull(g.distribution.GetUserParty(user))
+}
+
+func (g *MafiaGame) GetParty(user string) int {
+	return g.distribution.GetUserParty(user)
+}
+
+func (g *MafiaGame) GetRole(user string) proto.Roles {
+	return g.distribution.GetRole(user)
+}
+
+func (g *MafiaGame) DistributeRoles(party int) bool {
+	return g.distribution.DistributeRoles(party)
+}
+
+func (g *MafiaGame) GetMembers(party int) []string {
+	return g.distribution.GetParty(party)
+}
+
+// func (g *MafiaGame) StartGame(party_id int) {
+
+// }

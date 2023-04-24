@@ -15,6 +15,7 @@ import (
 
 type User struct {
 	Login string
+	Role  proto.Roles
 }
 
 type mafiaApplication struct {
@@ -26,18 +27,23 @@ func New() *mafiaApplication {
 	return &mafiaApplication{}
 }
 
+func (app *mafiaApplication) SetLogin() {
+
+}
+
 func (app *mafiaApplication) Start(host string, port int) error {
 	fmt.Print("Hello! Welcome to Mafia game.\nEnter your login: ")
+	var err error
+	app.grpcClient, err = domain_client.New(host, port)
+	if err != nil {
+		return err
+	}
 	reader := bufio.NewReader(os.Stdin)
 	login, err := reader.ReadString('\n')
 	if err != nil {
 		return err
 	}
 	login = login[:len(login)-1]
-	app.grpcClient, err = domain_client.New(host, port)
-	if err != nil {
-		return err
-	}
 	response, err := app.setLogin(login)
 	if err != nil {
 		return err
@@ -53,23 +59,31 @@ func (app *mafiaApplication) Start(host string, port int) error {
 			return err
 		}
 	}
-	// ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	// defer cancel()
-	ctx := context.Background()
-	rsp, err := app.grpcClient.ListConnections(ctx, &proto.ListConnectionsRequest{Login: login})
-	if err != nil {
-		return err
-	}
-	for {
-		m, e := rsp.Recv()
-		if e == io.EOF {
-			break
+	app.user.Role = proto.Roles_Undefined
+	if response.Readiness.SessionReady {
+		app.user.Role = response.Readiness.Role
+	} else {
+		ctx := context.Background()
+		rsp, err := app.grpcClient.ListConnections(ctx, &proto.ListConnectionsRequest{Login: login})
+		if err != nil {
+			return err
 		}
-		if e != nil {
-			return e
+		for {
+			m, err := rsp.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return err
+			}
+			if m.Readiness.SessionReady {
+				app.user.Role = m.Readiness.Role
+				break
+			}
+			fmt.Printf("%v %v at %v\n", m.Login, m.State, m.Time.AsTime())
 		}
-		fmt.Printf("%v %v at %v\n", m.Login, m.State, m.Time.AsTime())
 	}
+	fmt.Printf("Your session is ready, you are %v\n", app.user.Role)
 	return nil
 }
 

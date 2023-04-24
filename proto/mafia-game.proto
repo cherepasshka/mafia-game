@@ -16,20 +16,14 @@ enum Roles {
     Undefined = 3;
 }
 
-message SetNameRequest {
-    User user = 1;
-    string new_name = 2;
-}
-
-message SetNameResponse {
-    bool success = 1;
+message SessionReadiness {
+    bool session_ready = 1;
+    Roles role = 2;
 }
 
 message ConnectToSessionResponse {
-    // repeated User connected_users = 1;
-    bool success = 2;
-    // bool game_started = 3;
-    // Roles role = 4;
+    bool success = 1;
+    SessionReadiness readiness = 2;
 }
 
 message LeaveSessionRequest {
@@ -45,11 +39,13 @@ enum State {
     left = 1;
 }
 
-message Connection {
+message ListConnectionsResponse {
     string login = 1;
     State state = 2;
     google.protobuf.Timestamp time = 3;
+    SessionReadiness readiness = 4;
 }
+
 message ListConnectionsRequest {
     string login = 1;
 }
@@ -57,5 +53,5 @@ message ListConnectionsRequest {
 service MafiaService {
     rpc ConnectToSession(User) returns (ConnectToSessionResponse) {}
     rpc LeaveSession(LeaveSessionRequest) returns (LeaveSessionResponse) {}
-    rpc ListConnections(ListConnectionsRequest) returns (stream Connection) {}
+    rpc ListConnections(ListConnectionsRequest) returns (stream ListConnectionsResponse) {}
 }
