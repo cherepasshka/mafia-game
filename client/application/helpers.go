@@ -8,7 +8,7 @@ import (
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
-func (app *mafiaApplication) setLogin(login string) (*proto.ConnectToSessionResponse, error) {
+func (app *mafiaApplication) trySetLogin(login string) (*proto.ConnectToSessionResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	response, err := app.grpcClient.ConnectToSession(ctx, &proto.User{
@@ -19,7 +19,7 @@ func (app *mafiaApplication) setLogin(login string) (*proto.ConnectToSessionResp
 		return nil, err
 	}
 	if response.Success {
-		app.user.Login = login
+		app.login = login
 	}
 	return response, nil
 }

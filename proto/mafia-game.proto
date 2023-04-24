@@ -19,6 +19,7 @@ enum Roles {
 message SessionReadiness {
     bool session_ready = 1;
     Roles role = 2;
+    repeated string players = 3;
 }
 
 message ConnectToSessionResponse {
@@ -50,8 +51,34 @@ message ListConnectionsRequest {
     string login = 1;
 }
 
+message VoteForMafiaRequest {
+    string mafia_guess = 1;
+}
+
+message VoteForMafiaResponse {
+    string killed_user = 1;
+}
+
+message MoveRequest {
+    string target = 1;
+}
+
+message MoveResponse {
+    bool accepted = 1;
+    string reason = 2; // TODO
+}
+
+message DayRequest {}
+
+message DayResponse{
+    string victim = 1;
+}
+
 service MafiaService {
     rpc ConnectToSession(User) returns (ConnectToSessionResponse) {}
     rpc LeaveSession(LeaveSessionRequest) returns (LeaveSessionResponse) {}
     rpc ListConnections(ListConnectionsRequest) returns (stream ListConnectionsResponse) {}
+    rpc VoteForMafia(VoteForMafiaRequest) returns (VoteForMafiaResponse) {}
+    rpc MakeMove(MoveRequest) returns (MoveResponse) {}
+    rpc StartDay(DayRequest) returns (DayResponse) {}
 }

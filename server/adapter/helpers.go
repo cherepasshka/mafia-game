@@ -37,13 +37,10 @@ func (s *mafiaServer) ConnectToSession(ctx context.Context, user *proto.User) (*
 		},
 	}
 	if s.game.SessionReady(user.Name) {
-		/*
-			open game session for this party
-			send message that session is ready
-		*/
 		if s.game.DistributeRoles(s.game.GetParty(user.Name)) {
 			response.Readiness.SessionReady = true
 			response.Readiness.Role = s.game.GetRole(user.Name)
+			response.Readiness.Players = s.game.GetMembers(s.game.GetParty(user.Name))
 			s.SendNotification(s.game.GetMembers(s.game.GetParty(user.Name)))
 		}
 	}
@@ -68,7 +65,9 @@ func (s *mafiaServer) ListConnections(req *proto.ListConnectionsRequest, stream 
 		msgChannel <- s.game.Events[i]
 	}
 	defer func() {
-		delete(s.channels, req.Login)
+		// todo:
+		// is this really necessary?
+		// delete(s.channels, req.Login)
 	}()
 	for {
 		select {
@@ -90,6 +89,7 @@ func (s *mafiaServer) ListConnections(req *proto.ListConnectionsRequest, stream 
 			}
 			if msg.SessionReadiness {
 				response.Readiness.Role = s.game.GetRole(req.Login)
+				response.Readiness.Players = s.game.GetMembers(s.game.GetParty(req.Login))
 			}
 			err := stream.Send(response)
 			if err != nil || msg.SessionReadiness {
