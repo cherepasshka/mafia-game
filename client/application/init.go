@@ -21,8 +21,10 @@ type User struct {
 type mafiaApplication struct {
 	grpcClient *domain_client.Client
 	//user       User
-	login  string
-	player models.User
+	login   string
+	player  models.User
+	players []string
+	alive   []string
 }
 
 func New() *mafiaApplication {
@@ -99,27 +101,38 @@ func (app *mafiaApplication) Start(host string, port int) error {
 		}
 		role = readiness.Role
 	}
+	app.players = readiness.Players
 	fmt.Printf("Your session is ready, you are %v\n", role)
-	fmt.Printf("Members of this session are: ")
-	for _, player := range readiness.Players {
-		fmt.Printf("%s ", player)
-	}
-	fmt.Println()
+
 	app.player = models.MakeUser(login, role)
+	app.alive = readiness.Players
 	for {
-		app.player.MakeNightMove(app.grpcClient)
-		rsp, err := app.grpcClient.StartDay(context.TODO(), &proto.DayRequest{})
+		fmt.Printf("Alive members of this session are: ")
+		for _, player := range app.alive {
+			fmt.Printf("%s ", player)
+		}
+		fmt.Println()
+		err = app.player.MakeNightMove(app.alive, app.grpcClient)
+		if err != nil {
+			return err
+		}
+		rsp, err := app.grpcClient.StartDay(context.TODO(), &proto.DayRequest{Login: app.login})
 		if err != nil {
 			return err
 		}
 		if rsp.Victim == app.login {
-			fmt.Print("0_0\nYou were killed this night!\n")
+			fmt.Print("\tYou were killed this night!\n")
 			app.player.SetStatus(models.Dead)
 		} else {
 			fmt.Printf("This night %s was murdured\n", rsp.Victim)
 		}
+		app.alive = rsp.Alive
+		if len(app.alive) <= 1 {
+			break
+		}
 
 	}
+	fmt.Print("Game over\n")
 	return nil
 }
 

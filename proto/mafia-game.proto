@@ -61,6 +61,7 @@ message VoteForMafiaResponse {
 
 message MoveRequest {
     string target = 1;
+    string login = 2;
 }
 
 message MoveResponse {
@@ -68,10 +69,13 @@ message MoveResponse {
     string reason = 2; // TODO
 }
 
-message DayRequest {}
+message DayRequest {
+    string login = 1;
+}
 
 message DayResponse{
     string victim = 1;
+    repeated string alive = 2;
 }
 
 service MafiaService {

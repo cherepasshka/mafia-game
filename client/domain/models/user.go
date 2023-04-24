@@ -18,7 +18,7 @@ type User interface {
 	GetRole() proto.Roles
 	GetStatus() LiveStatus
 	SetStatus(LiveStatus)
-	MakeNightMove(proto.MafiaServiceClient) error
+	MakeNightMove([]string, proto.MafiaServiceClient) error
 }
 
 type BaseUser struct {
@@ -42,7 +42,7 @@ func (user *BaseUser) SetStatus(status LiveStatus) {
 	user.Status = status
 }
 
-func (user *BaseUser) MakeNightMove(proto.MafiaServiceClient) error {
+func (user *BaseUser) MakeNightMove([]string, proto.MafiaServiceClient) error {
 	return fmt.Errorf("not implemented")
 }
 
@@ -57,6 +57,10 @@ func MakeUser(login string, role proto.Roles) User {
 		}
 	} else if role == proto.Roles_Mafia {
 		return &Mafia{
+			BaseUser: base,
+		}
+	} else if role == proto.Roles_Commissioner {
+		return &Commissioner{
 			BaseUser: base,
 		}
 	}

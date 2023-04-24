@@ -61,7 +61,31 @@ func (g *MafiaGame) GetRole(user string) proto.Roles {
 }
 
 func (g *MafiaGame) DistributeRoles(party int) bool {
+	members := g.GetMembers(party)
+	for _, member := range members {
+		g.is_alive[member] = true
+	}
 	return g.distribution.DistributeRoles(party)
+}
+
+func (g *MafiaGame) IsAlive(login string) bool {
+	return g.is_alive[login]
+}
+
+func (g *MafiaGame) Kill(login string) {
+	g.is_alive[login] = false
+	// g.RecentVictim = login
+}
+
+func (g *MafiaGame) GetAliveMembers(party int) []string {
+	members := g.GetMembers(party)
+	alive := make([]string, 0, len(members))
+	for _, member := range members {
+		if g.is_alive[member] {
+			alive = append(alive, member)
+		}
+	}
+	return alive
 }
 
 func (g *MafiaGame) GetMembers(party int) []string {

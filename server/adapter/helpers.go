@@ -64,11 +64,6 @@ func (s *mafiaServer) ListConnections(req *proto.ListConnectionsRequest, stream 
 	for i := 0; i < len(s.game.Events); i++ {
 		msgChannel <- s.game.Events[i]
 	}
-	defer func() {
-		// todo:
-		// is this really necessary?
-		// delete(s.channels, req.Login)
-	}()
 	for {
 		select {
 		case <-stream.Context().Done():
@@ -98,4 +93,62 @@ func (s *mafiaServer) ListConnections(req *proto.ListConnectionsRequest, stream 
 			}
 		}
 	}
+}
+
+func (s *mafiaServer) VoteForMafia(context.Context, *proto.VoteForMafiaRequest) (*proto.VoteForMafiaResponse, error) {
+	return nil, nil
+}
+
+func (s *mafiaServer) MakeMove(ctx context.Context, req *proto.MoveRequest) (*proto.MoveResponse, error) {
+	/*
+		mb better to call this function from every player whenewer dead or alive, else мертвяки могут не успеть обновить день и остаться в предыдущем
+	*/
+	role := s.game.GetRole(req.Login)
+	response := &proto.MoveResponse{}
+	if role == proto.Roles_Civilian {
+		s.cnt++
+	} else if role == proto.Roles_Commissioner {
+		if s.game.GetRole(req.Target) == proto.Roles_Mafia {
+			response.Accepted = true
+		} else {
+			response.Accepted = false
+		}
+		s.cnt++
+
+	} else if role == proto.Roles_Mafia {
+		if s.game.IsAlive(req.Target) {
+			s.game.RecentVictim = req.Target
+			response.Accepted = true
+			s.cnt++
+		} else {
+			response.Accepted = false
+		}
+	}
+	fmt.Printf("Hi user %s, you are %v, cnt: %v\n", req.Login, role, s.cnt)
+	alive_cnt := len(s.game.GetAliveMembers(s.game.GetParty(req.Login)))
+	if s.cnt == alive_cnt {
+		fmt.Printf("In %s send notifications to proceed\n", req.Login)
+		s.game.Kill(s.game.RecentVictim)
+		for _, member := range s.game.GetMembers(s.game.GetParty(req.Login)) {
+			_, ok := s.ready[member]
+			if !ok {
+				s.ready[member] = make(chan bool, 1)
+			}
+			fmt.Printf("Sent to %s\n", member)
+			s.ready[member] <- true
+		}
+		s.cnt -= alive_cnt
+	}
+	return response, nil
+}
+func (s *mafiaServer) StartDay(ctx context.Context, req *proto.DayRequest) (*proto.DayResponse, error) {
+	fmt.Printf("In %s wait to continue and start day\n", req.Login)
+	<-s.ready[req.Login]
+	fmt.Printf("In %s start day\n", req.Login)
+	resp := &proto.DayResponse{
+		Victim: s.game.RecentVictim,
+		Alive:  s.game.GetAliveMembers(s.game.GetParty(req.Login)),
+	}
+	fmt.Printf("for %v alive %v\n", req.Login, resp.Alive)
+	return resp, nil
 }
