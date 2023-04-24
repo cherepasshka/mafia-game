@@ -1,18 +1,17 @@
-package models
+package random_strategy
 
 import (
-	// "bufio"
 	"context"
 	"fmt"
-	// "os"
 
 	"math/rand"
 
+	"soa.mafia-game/client/domain/models/user"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
 type Commissioner struct {
-	BaseUser
+	models.BaseUser
 }
 
 func (user *Commissioner) GetRole() proto.Roles {
@@ -53,7 +52,7 @@ func (user *Commissioner) GetRole() proto.Roles {
 // }
 
 func (user *Commissioner) MakeNightMove(players []string, client proto.MafiaServiceClient) error {
-	if user.Status == Dead {
+	if user.Status == models.Dead {
 		fmt.Println("You are dead, so you skip this night")
 		return nil
 	}
@@ -66,15 +65,6 @@ func (user *Commissioner) MakeNightMove(players []string, client proto.MafiaServ
 	if err != nil {
 		return err
 	}
-	// for !response.Accepted {
-	// 	for suspected == user.Login {
-	// 		suspected = players[rand.Intn(len(players))]
-	// 	}
-	// 	response, err = client.MakeMove(ctx, &proto.MoveRequest{Target: suspected})
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
 	if response.Accepted {
 		fmt.Printf("You suspected %s correct, this user is mafia\n", suspected)
 	} else {

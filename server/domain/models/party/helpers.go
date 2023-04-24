@@ -2,36 +2,11 @@ package party
 
 import (
 	"math/rand"
-	proto "soa.mafia-game/proto/mafia-game"
 	"sort"
 	"time"
+
+	proto "soa.mafia-game/proto/mafia-game"
 )
-
-const (
-	PARTY_SIZE = 4
-)
-
-type PartiesDistribution struct {
-	party              map[string]int
-	non_full_party_ids []int
-	party_size         []int
-	// users              []string
-	party_set int
-	roles     map[string]proto.Roles
-}
-
-func New() PartiesDistribution {
-	distribution := PartiesDistribution{
-		party_size:         make([]int, 1),
-		non_full_party_ids: make([]int, 1),
-		party_set:          1,
-		party:              make(map[string]int),
-		roles:              make(map[string]proto.Roles),
-	}
-	distribution.non_full_party_ids[0] = 0
-	distribution.party_size[0] = 0
-	return distribution
-}
 
 func (d *PartiesDistribution) AddPlayer(user_login string) {
 	id := len(d.non_full_party_ids) - 1

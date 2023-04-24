@@ -69,6 +69,11 @@ message MoveResponse {
     string reason = 2; // TODO
 }
 
+message GameStatus {
+    bool active = 1;
+    Roles winner = 2;
+}
+
 message DayRequest {
     string login = 1;
 }
@@ -76,6 +81,7 @@ message DayRequest {
 message DayResponse{
     string victim = 1;
     repeated string alive = 2;
+    GameStatus game_status = 3;
 }
 
 service MafiaService {

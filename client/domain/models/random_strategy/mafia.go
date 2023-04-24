@@ -1,4 +1,4 @@
-package models
+package random_strategy
 
 import (
 	// "bufio"
@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"math/rand"
 
+	"soa.mafia-game/client/domain/models/user"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
 type Mafia struct {
-	BaseUser
+	models.BaseUser
 }
 
 func (user *Mafia) GetRole() proto.Roles {
@@ -53,7 +54,7 @@ func (user *Mafia) GetRole() proto.Roles {
 
 // Random below
 func (user *Mafia) MakeNightMove(alive_players []string, client proto.MafiaServiceClient) error {
-	if user.Status == Dead {
+	if user.Status == models.Dead {
 		fmt.Println("You are dead, so you skip this night")
 		return nil
 	}

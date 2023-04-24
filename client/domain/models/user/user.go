@@ -45,24 +45,3 @@ func (user *BaseUser) SetStatus(status LiveStatus) {
 func (user *BaseUser) MakeNightMove([]string, proto.MafiaServiceClient) error {
 	return fmt.Errorf("not implemented")
 }
-
-func MakeUser(login string, role proto.Roles) User {
-	base := BaseUser{
-		Status: Alive,
-		Login:  login,
-	}
-	if role == proto.Roles_Civilian {
-		return &Civilian{
-			BaseUser: base,
-		}
-	} else if role == proto.Roles_Mafia {
-		return &Mafia{
-			BaseUser: base,
-		}
-	} else if role == proto.Roles_Commissioner {
-		return &Commissioner{
-			BaseUser: base,
-		}
-	}
-	return &base
-}
