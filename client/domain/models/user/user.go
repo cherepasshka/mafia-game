@@ -19,6 +19,7 @@ type User interface {
 	GetStatus() LiveStatus
 	SetStatus(LiveStatus)
 	MakeNightMove([]string, proto.MafiaServiceClient) error
+	VoteForMafia([]string, proto.MafiaServiceClient) error
 }
 
 type BaseUser struct {
@@ -43,5 +44,9 @@ func (user *BaseUser) SetStatus(status LiveStatus) {
 }
 
 func (user *BaseUser) MakeNightMove([]string, proto.MafiaServiceClient) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (user *BaseUser) VoteForMafia([]string, proto.MafiaServiceClient) error {
 	return fmt.Errorf("not implemented")
 }

@@ -12,6 +12,7 @@ import (
 
 type Commissioner struct {
 	models.BaseUser
+	lastGuess string
 }
 
 func (user *Commissioner) GetRole() proto.Roles {
@@ -67,8 +68,36 @@ func (user *Commissioner) MakeNightMove(players []string, client proto.MafiaServ
 	}
 	if response.Accepted {
 		fmt.Printf("You suspected %s correct, this user is mafia\n", suspected)
+		user.lastGuess = suspected
 	} else {
 		fmt.Printf("You suspected %s wrong, this user is not mafia\n", suspected)
+		user.lastGuess = ""
+	}
+	return nil
+}
+
+func (user *Commissioner) VoteForMafia(alive_players []string, client proto.MafiaServiceClient) error {
+	if user.Status == models.Dead {
+		fmt.Println("You are dead, so you skip this day vote")
+		return nil
+	}
+	guess := user.Login
+	if user.lastGuess == "" {
+		for guess == user.Login {
+			guess = alive_players[rand.Intn(len(alive_players))]
+		}
+	} else {
+		guess = user.lastGuess
+	}
+	rsp, err := client.VoteForMafia(context.Background(), &proto.VoteForMafiaRequest{Login: user.Login, MafiaGuess: guess})
+	if err != nil {
+		return err
+	}
+	fmt.Printf("You voted for %s\n", guess)
+	if rsp.KilledUser == user.Login {
+		fmt.Println("Most voted for you")
+	} else {
+		fmt.Printf("Most voted for %s, this user had role: %s\n", rsp.KilledUser, rsp.KilledUserRole)
 	}
 	return nil
 }

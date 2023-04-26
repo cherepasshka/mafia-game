@@ -1,7 +1,9 @@
 package mafia_domain
 
 import (
+	"fmt"
 	"time"
+	// "sync/atomic"
 
 	proto "soa.mafia-game/proto/mafia-game"
 )
@@ -89,6 +91,7 @@ func (game *MafiaGame) GetAliveMembers(party int) []string {
 func (game *MafiaGame) GetMembers(party int) []string {
 	return game.distribution.GetParty(party)
 }
+
 func (game *MafiaGame) CountRole(party int, role proto.Roles) int {
 	members := game.GetAliveMembers(party)
 	cnt := 0
@@ -99,6 +102,7 @@ func (game *MafiaGame) CountRole(party int, role proto.Roles) int {
 	}
 	return cnt
 }
+
 func (game *MafiaGame) IsActive(party int) bool {
 	mafia_cnt := game.CountRole(party, proto.Roles_Mafia)
 	civilian_cnt := game.CountRole(party, proto.Roles_Civilian)
@@ -115,4 +119,49 @@ func (game *MafiaGame) Winner(party int) proto.Roles {
 		return proto.Roles_Mafia
 	}
 	return proto.Roles_Undefined
+}
+
+func (game *MafiaGame) VoteFor(voter_login string, guess string) {
+	party := game.GetParty(voter_login)
+	cnt, exist := game.votes_cnt[party]
+	if !exist {
+		game.votes_cnt[party] = make(map[string]int)
+		cnt = game.votes_cnt[party]
+	}
+	cnt[guess] += 1
+	game.voted[party] += 1
+
+	game.ghost[voter_login] = make(chan string, 1)
+}
+
+func (game *MafiaGame) WaitForEverybody(user_login string) string {
+	party := game.GetParty(user_login)
+	alive := game.GetAliveMembers(party)
+	alive_cnt := int32(len(alive))
+	game.mut.Lock()
+	if game.voted[party] == alive_cnt {
+		fmt.Printf("in %s alive %v, voted %v\n", user_login, len(alive), game.voted[party])
+		game.voted[party] = 0
+		ghost := user_login
+		for player := range game.votes_cnt[party] {
+			if game.votes_cnt[party][player] > game.votes_cnt[party][ghost] {
+				ghost = player
+			}
+		}
+		for key := range game.votes_cnt[party] {
+			delete(game.votes_cnt[party], key)
+		}
+		// next unblock every waiter
+		game.Kill(ghost)
+		for _, user := range alive {
+			fmt.Printf("in %s send unlock for %s\n", user_login, user)
+			game.ghost[user] <- ghost
+		}
+	}
+	game.mut.Unlock()
+	fmt.Printf("in %s wait to get ghost\n", user_login)
+	ghost := <-game.ghost[user_login]
+	fmt.Printf("in %s get ghost %s\n", user_login, ghost)
+
+	return ghost
 }

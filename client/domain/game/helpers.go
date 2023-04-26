@@ -31,8 +31,26 @@ func (game *Game) Start(grpcClient *domain_client.Client) error {
 			fmt.Printf("This night %s was murdured\n", rsp.Victim)
 		}
 		game.alive = rsp.Alive
-		if !rsp.GameStatus.Active {
-			if rsp.GameStatus.Winner == proto.Roles_Civilian {
+		// if !rsp.GameStatus.Active {
+		// 	if rsp.GameStatus.Winner == proto.Roles_Civilian {
+		// 		fmt.Printf("Civilians won!\n")
+		// 	} else {
+		// 		fmt.Printf("Mafia won =(\n")
+		// 	}
+		// 	break
+		// }
+		fmt.Println("Start day")
+		err = game.player.VoteForMafia(game.alive, grpcClient)
+		if err != nil {
+			return err
+		}
+		rsp1, err := grpcClient.GetStatus(context.TODO(), &proto.StatusRequest{Login: game.player.GetLogin()})
+		if err != nil {
+			return err
+		}
+		game.alive = rsp1.Alive
+		if !rsp1.GameStatus.Active {
+			if rsp1.GameStatus.Winner == proto.Roles_Civilian {
 				fmt.Printf("Civilians won!\n")
 			} else {
 				fmt.Printf("Mafia won =(\n")

@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	PARTY_SIZE = 4
+	PARTY_SIZE = 5
 )
 
 type PartiesDistribution struct {

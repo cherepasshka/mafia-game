@@ -53,10 +53,12 @@ message ListConnectionsRequest {
 
 message VoteForMafiaRequest {
     string mafia_guess = 1;
+    string login = 2;
 }
 
 message VoteForMafiaResponse {
     string killed_user = 1;
+    Roles killed_user_role = 2;
 }
 
 message MoveRequest {
@@ -81,7 +83,15 @@ message DayRequest {
 message DayResponse{
     string victim = 1;
     repeated string alive = 2;
-    GameStatus game_status = 3;
+}
+
+message StatusRequest {
+    string login = 1;
+}
+
+message StatusResponse{
+    repeated string alive = 1;
+    GameStatus game_status = 2;
 }
 
 service MafiaService {
@@ -91,4 +101,5 @@ service MafiaService {
     rpc VoteForMafia(VoteForMafiaRequest) returns (VoteForMafiaResponse) {}
     rpc MakeMove(MoveRequest) returns (MoveResponse) {}
     rpc StartDay(DayRequest) returns (DayResponse) {}
+    rpc GetStatus(StatusRequest) returns (StatusResponse) {}
 }

@@ -123,6 +123,7 @@ func (adapter *ServerAdapter) MakeMove(ctx context.Context, req *proto.MoveReque
 		}
 	}
 	fmt.Printf("Hi user %s, you are %v, cnt: %v\n", req.Login, role, adapter.cnt)
+	adapter.mut.Lock()
 	alive_cnt := len(adapter.game.GetAliveMembers(adapter.game.GetParty(req.Login)))
 	if adapter.cnt == alive_cnt {
 		fmt.Printf("In %s send notifications to proceed\n", req.Login)
@@ -133,6 +134,7 @@ func (adapter *ServerAdapter) MakeMove(ctx context.Context, req *proto.MoveReque
 		}
 		adapter.cnt -= alive_cnt
 	}
+	adapter.mut.Unlock()
 	return response, nil
 }
 
@@ -143,15 +145,28 @@ func (adapter *ServerAdapter) StartDay(ctx context.Context, req *proto.DayReques
 	resp := &proto.DayResponse{
 		Victim: adapter.game.RecentVictim,
 		Alive:  adapter.game.GetAliveMembers(adapter.game.GetParty(req.Login)),
-		GameStatus: &proto.GameStatus{
-			Active: adapter.game.IsActive(adapter.game.GetParty(req.Login)),
-			Winner: adapter.game.Winner(adapter.game.GetParty(req.Login)),
-		},
+		// GameStatus: &proto.GameStatus{
+		// 	Active: adapter.game.IsActive(adapter.game.GetParty(req.Login)),
+		// 	Winner: adapter.game.Winner(adapter.game.GetParty(req.Login)),
+		// },
 	}
 	fmt.Printf("for %v alive %v\n", req.Login, resp.Alive)
 	return resp, nil
 }
 
-func (adapter *ServerAdapter) VoteForMafia(context.Context, *proto.VoteForMafiaRequest) (*proto.VoteForMafiaResponse, error) {
-	return nil, nil
+func (adapter *ServerAdapter) VoteForMafia(ctx context.Context, req *proto.VoteForMafiaRequest) (*proto.VoteForMafiaResponse, error) {
+	adapter.game.VoteFor(req.Login, req.MafiaGuess)
+	ghost := adapter.game.WaitForEverybody(req.Login)
+	response := &proto.VoteForMafiaResponse{KilledUser: ghost, KilledUserRole: adapter.game.GetRole(ghost)}
+	return response, nil
+}
+
+func (adapter *ServerAdapter) GetStatus(ctx context.Context, req *proto.StatusRequest) (*proto.StatusResponse, error) {
+	return &proto.StatusResponse{
+		Alive: adapter.game.GetAliveMembers(adapter.game.GetParty(req.Login)),
+		GameStatus: &proto.GameStatus{
+			Active: adapter.game.IsActive(adapter.game.GetParty(req.Login)),
+			Winner: adapter.game.Winner(adapter.game.GetParty(req.Login)),
+		},
+	}, nil
 }

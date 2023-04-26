@@ -66,8 +66,9 @@ func (d *PartiesDistribution) DistributeRoles(party int) bool {
 
 	d.roles[members[0]] = proto.Roles_Civilian
 	d.roles[members[1]] = proto.Roles_Civilian
-	d.roles[members[2]] = proto.Roles_Mafia
-	d.roles[members[3]] = proto.Roles_Commissioner
+	d.roles[members[2]] = proto.Roles_Civilian
+	d.roles[members[3]] = proto.Roles_Mafia
+	d.roles[members[4]] = proto.Roles_Commissioner
 	return true
 }
 
