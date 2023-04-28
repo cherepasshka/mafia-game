@@ -39,6 +39,9 @@ func (app *mafiaApplication) Start(host string, port int) error {
 		if readiness, err = app.WaitForSession(login); err != nil {
 			return err
 		}
+		if readiness == nil {
+			return nil
+		}
 		role = readiness.Role
 	}
 	fmt.Printf("Your session is ready, you are %v\n", role)

@@ -13,7 +13,6 @@ type ServerAdapter struct {
 	connections map[string]chan mafia_domain.Event
 	guard       sync.Mutex
 
-	// TODO
 	victims       map[string]chan string
 	moved_players map[int]int
 }
