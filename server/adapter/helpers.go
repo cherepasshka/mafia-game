@@ -10,7 +10,7 @@ import (
 	mafia_domain "soa.mafia-game/server/domain/mafia-game"
 )
 
-func (adapter *ServerAdapter) SendNotification(members []string) {
+func (adapter *ServerAdapter) SendReadinessNotification(members []string) {
 	for _, member := range members {
 		channel, exist := adapter.connections[member]
 		if exist {
@@ -31,8 +31,7 @@ func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, user *proto.
 	if !success {
 		return response, nil
 	}
-	for nm, channel := range adapter.connections {
-		fmt.Printf("sent to %s\n", nm)
+	for _, channel := range adapter.connections {
 		channel <- event
 	}
 	fmt.Printf("Hi %v!\n", user.Name)
@@ -41,11 +40,24 @@ func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, user *proto.
 			response.Readiness.SessionReady = true
 			response.Readiness.Role = adapter.game.GetRole(user.Name)
 			response.Readiness.Players = adapter.game.GetMembers(adapter.game.GetParty(user.Name))
-			adapter.SendNotification(adapter.game.GetMembers(adapter.game.GetParty(user.Name)))
+			adapter.SendReadinessNotification(adapter.game.GetMembers(adapter.game.GetParty(user.Name)))
 		}
 	}
-	adapter.start_next_day[user.Name] = make(chan bool, 1)
+	adapter.victims[user.Name] = make(chan string, 1)
 	return response, nil
+}
+
+func (adapter *ServerAdapter) CloseChannels(user_login string) {
+	conection, exist := adapter.connections[user_login]
+	if exist {
+		close(conection)
+		delete(adapter.connections, user_login)
+	}
+	start_next_day, exist := adapter.victims[user_login]
+	if exist {
+		close(start_next_day)
+		delete(adapter.victims, user_login)
+	}
 }
 
 func (adapter *ServerAdapter) LeaveSession(ctx context.Context, request *proto.LeaveSessionRequest) (*proto.LeaveSessionResponse, error) {
@@ -54,15 +66,13 @@ func (adapter *ServerAdapter) LeaveSession(ctx context.Context, request *proto.L
 		channel <- event
 	}
 	fmt.Printf("Bye %v!\n", request.User.Name)
-	// verify that channel is open
-	close(adapter.connections[request.User.Name])
+	adapter.CloseChannels(request.User.Name)
 	return &proto.LeaveSessionResponse{Success: success}, nil
 }
 
 func (adapter *ServerAdapter) ListConnections(req *proto.ListConnectionsRequest, stream proto.MafiaService_ListConnectionsServer) error {
 	msgChannel := make(chan mafia_domain.Event, len(adapter.game.Events)+1)
 	adapter.connections[req.Login] = msgChannel
-	fmt.Printf("open list for %s\n", req.Login)
 	for i := 0; i < len(adapter.game.Events); i++ {
 		msgChannel <- adapter.game.Events[i]
 	}
@@ -70,6 +80,7 @@ func (adapter *ServerAdapter) ListConnections(req *proto.ListConnectionsRequest,
 		select {
 		case <-stream.Context().Done():
 			close(msgChannel)
+			delete(adapter.connections, req.Login)
 			return nil
 		case msg, success := <-msgChannel:
 			if !success {
@@ -89,68 +100,61 @@ func (adapter *ServerAdapter) ListConnections(req *proto.ListConnectionsRequest,
 				response.Readiness.Players = adapter.game.GetMembers(adapter.game.GetParty(req.Login))
 			}
 			err := stream.Send(response)
-			if err != nil || msg.SessionReadiness {
+			if err != nil {
 				close(msgChannel)
 				return err
+			}
+			if response.Readiness.SessionReady {
+				return nil
 			}
 		}
 	}
 }
 
 func (adapter *ServerAdapter) MakeMove(ctx context.Context, req *proto.MoveRequest) (*proto.MoveResponse, error) {
-	/*
-		mb better to call this function from every player whenewer dead or alive, else мертвяки могут не успеть обновить день и остаться в предыдущем
-	*/
 	role := adapter.game.GetRole(req.Login)
+	party := adapter.game.GetParty(req.Login)
 	response := &proto.MoveResponse{}
 	if role == proto.Roles_Civilian {
-		adapter.cnt++
+		adapter.moved_players[party]++
 	} else if role == proto.Roles_Commissioner {
 		if adapter.game.GetRole(req.Target) == proto.Roles_Mafia {
 			response.Accepted = true
 		} else {
 			response.Accepted = false
 		}
-		adapter.cnt++
+		adapter.moved_players[party]++
 
 	} else if role == proto.Roles_Mafia {
-		if adapter.game.IsAlive(req.Target) {
-			adapter.game.RecentVictim = req.Target
+		if adapter.game.IsPlayerAlive(req.Target) {
+			adapter.game.RecentVictim[party] = req.Target
 			response.Accepted = true
-			adapter.cnt++
+			adapter.moved_players[party]++
 		} else {
 			response.Accepted = false
 		}
 	}
-	fmt.Printf("Hi user %s, you are %v, cnt: %v\n", req.Login, role, adapter.cnt)
-	adapter.mut.Lock()
+	adapter.guard.Lock()
+	defer adapter.guard.Unlock()
 	alive_cnt := len(adapter.game.GetAliveMembers(adapter.game.GetParty(req.Login)))
-	if adapter.cnt == alive_cnt {
-		fmt.Printf("In %s send notifications to proceed\n", req.Login)
-		adapter.game.Kill(adapter.game.RecentVictim)
+	if adapter.moved_players[party] == alive_cnt {
+		adapter.game.Kill(adapter.game.RecentVictim[party])
+		victim := adapter.game.RecentVictim[party]
+		adapter.game.RecentVictim[party] = "None"
 		for _, member := range adapter.game.GetMembers(adapter.game.GetParty(req.Login)) {
-			fmt.Printf("Sent to %s\n", member)
-			adapter.start_next_day[member] <- true
+			adapter.victims[member] <- victim
 		}
-		adapter.cnt -= alive_cnt
+		adapter.moved_players[party] -= alive_cnt
 	}
-	adapter.mut.Unlock()
 	return response, nil
 }
 
 func (adapter *ServerAdapter) StartDay(ctx context.Context, req *proto.DayRequest) (*proto.DayResponse, error) {
-	fmt.Printf("In %s wait to continue and start day\n", req.Login)
-	<-adapter.start_next_day[req.Login]
-	fmt.Printf("In %s start day\n", req.Login)
+	victim := <-adapter.victims[req.Login]
 	resp := &proto.DayResponse{
-		Victim: adapter.game.RecentVictim,
+		Victim: victim,
 		Alive:  adapter.game.GetAliveMembers(adapter.game.GetParty(req.Login)),
-		// GameStatus: &proto.GameStatus{
-		// 	Active: adapter.game.IsActive(adapter.game.GetParty(req.Login)),
-		// 	Winner: adapter.game.Winner(adapter.game.GetParty(req.Login)),
-		// },
 	}
-	fmt.Printf("for %v alive %v\n", req.Login, resp.Alive)
 	return resp, nil
 }
 

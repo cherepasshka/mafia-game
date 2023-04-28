@@ -3,7 +3,6 @@ package random_strategy
 import (
 	"context"
 	"fmt"
-
 	"math/rand"
 
 	"soa.mafia-game/client/domain/models/user"
@@ -19,40 +18,8 @@ func (user *Commissioner) GetRole() proto.Roles {
 	return proto.Roles_Commissioner
 }
 
-// User interaction below
-// func (user *Commissioner) MakeNightMove(players []string, client proto.MafiaServiceClient) error {
-// 	if user.Status == Dead {
-// 		fmt.Println("You are dead, so you skip this night")
-// 		return nil
-// 	}
-// 	fmt.Printf("Enter suspected's login: ")
-// 	reader := bufio.NewReader(os.Stdin)
-// 	suspected, err := reader.ReadString('\n')
-// 	if err != nil {
-// 		return err
-// 	}
-// 	suspected = suspected[:len(suspected)-1]
-// 	ctx := context.Background()
-// 	response, err := client.MakeMove(ctx, &proto.MoveRequest{Target: suspected})
-// 	if err != nil {
-// 		return err
-// 	}
-// 	for !response.Accepted {
-// 		fmt.Printf("%s\nEnter another login: ", response.Reason)
-// 		suspected, err = reader.ReadString('\n')
-// 		if err != nil {
-// 			return err
-// 		}
-// 		suspected = suspected[:len(suspected)-1]
-// 		response, err = client.MakeMove(ctx, &proto.MoveRequest{Target: suspected})
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
-// 	return nil
-// }
-
-func (user *Commissioner) MakeNightMove(players []string, client proto.MafiaServiceClient) error {
+func (user *Commissioner) MakeNightMove(ctx context.Context, players []string, client proto.MafiaServiceClient) error {
+	SetRandom()
 	if user.Status == models.Dead {
 		fmt.Println("You are dead, so you skip this night")
 		return nil
@@ -61,7 +28,6 @@ func (user *Commissioner) MakeNightMove(players []string, client proto.MafiaServ
 	for suspected == user.Login {
 		suspected = players[rand.Intn(len(players))]
 	}
-	ctx := context.Background()
 	response, err := client.MakeMove(ctx, &proto.MoveRequest{Login: user.Login, Target: suspected})
 	if err != nil {
 		return err
@@ -76,24 +42,26 @@ func (user *Commissioner) MakeNightMove(players []string, client proto.MafiaServ
 	return nil
 }
 
-func (user *Commissioner) VoteForMafia(alive_players []string, client proto.MafiaServiceClient) error {
+func (user *Commissioner) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) error {
+	SetRandom()
+	guess := user.Login
 	if user.Status == models.Dead {
 		fmt.Println("You are dead, so you skip this day vote")
-		return nil
-	}
-	guess := user.Login
-	if user.lastGuess == "" {
-		for guess == user.Login {
-			guess = alive_players[rand.Intn(len(alive_players))]
-		}
+		guess = "None"
 	} else {
-		guess = user.lastGuess
+		if user.lastGuess == "" {
+			for guess == user.Login {
+				guess = alive_players[rand.Intn(len(alive_players))]
+			}
+		} else {
+			guess = user.lastGuess
+		}
+		fmt.Printf("You voted for %s\n", guess)
 	}
-	rsp, err := client.VoteForMafia(context.Background(), &proto.VoteForMafiaRequest{Login: user.Login, MafiaGuess: guess})
+	rsp, err := client.VoteForMafia(ctx, &proto.VoteForMafiaRequest{Login: user.Login, MafiaGuess: guess})
 	if err != nil {
 		return err
 	}
-	fmt.Printf("You voted for %s\n", guess)
 	if rsp.KilledUser == user.Login {
 		fmt.Println("Most voted for you")
 	} else {

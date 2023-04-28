@@ -1,29 +1,25 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
-	// "google.golang.org/grpc"
-	// domain_client "soa.mafia-game/client/domain/mafia-client"
-	"soa.mafia-game/client/application"
-	// proto "soa.mafia-game/proto/mafia-game"
 	flag "github.com/spf13/pflag"
+	"soa.mafia-game/client/application"
 )
 
 func main() {
-	// ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
-	// defer cancel()
 	var port int
 	var host string
 	flag.IntVar(&port, "port", 9000, "specifies server port")
 	flag.StringVar(&host, "host", "", "specifies server host")
 	flag.Parse()
 
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGINT)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
+	defer cancel()
 
 	log.Println("Client running ...")
 	app := application.New()
@@ -33,8 +29,7 @@ func main() {
 			log.Fatal(err)
 		}
 	}()
-
-	<-ch
+	<-ctx.Done()
 
 	app.Stop()
 

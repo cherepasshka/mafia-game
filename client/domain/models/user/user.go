@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"fmt"
 
 	proto "soa.mafia-game/proto/mafia-game"
@@ -18,8 +19,8 @@ type User interface {
 	GetRole() proto.Roles
 	GetStatus() LiveStatus
 	SetStatus(LiveStatus)
-	MakeNightMove([]string, proto.MafiaServiceClient) error
-	VoteForMafia([]string, proto.MafiaServiceClient) error
+	MakeNightMove(context.Context, []string, proto.MafiaServiceClient) error
+	VoteForMafia(context.Context, []string, proto.MafiaServiceClient) error
 }
 
 type BaseUser struct {
@@ -43,10 +44,10 @@ func (user *BaseUser) SetStatus(status LiveStatus) {
 	user.Status = status
 }
 
-func (user *BaseUser) MakeNightMove([]string, proto.MafiaServiceClient) error {
+func (user *BaseUser) MakeNightMove(context.Context, []string, proto.MafiaServiceClient) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (user *BaseUser) VoteForMafia([]string, proto.MafiaServiceClient) error {
+func (user *BaseUser) VoteForMafia(context.Context, []string, proto.MafiaServiceClient) error {
 	return fmt.Errorf("not implemented")
 }

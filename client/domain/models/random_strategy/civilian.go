@@ -17,27 +17,29 @@ func (user *Civilian) GetRole() proto.Roles {
 	return proto.Roles_Civilian
 }
 
-func (user *Civilian) MakeNightMove(alive []string, client proto.MafiaServiceClient) error {
+func (user *Civilian) MakeNightMove(ctx context.Context, alive []string, client proto.MafiaServiceClient) error {
 	if user.Status == models.Alive {
 		client.MakeMove(context.Background(), &proto.MoveRequest{Login: user.Login})
 	}
 	return nil
 }
 
-func (user *Civilian) VoteForMafia(alive_players []string, client proto.MafiaServiceClient) error {
+func (user *Civilian) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) error {
+	SetRandom()
+	guess := user.Login
 	if user.Status == models.Dead {
 		fmt.Println("You are dead, so you skip this day vote")
-		return nil
+		guess = "None"
+	} else {
+		for guess == user.Login {
+			guess = alive_players[rand.Intn(len(alive_players))]
+		}
+		fmt.Printf("You voted for %s\n", guess)
 	}
-	guess := user.Login
-	for guess == user.Login {
-		guess = alive_players[rand.Intn(len(alive_players))]
-	}
-	rsp, err := client.VoteForMafia(context.Background(), &proto.VoteForMafiaRequest{Login: user.Login, MafiaGuess: guess})
+	rsp, err := client.VoteForMafia(ctx, &proto.VoteForMafiaRequest{Login: user.Login, MafiaGuess: guess})
 	if err != nil {
 		return err
 	}
-	fmt.Printf("You voted for %s\n", guess)
 	if rsp.KilledUser == user.Login {
 		fmt.Println("Most voted for you")
 	} else {

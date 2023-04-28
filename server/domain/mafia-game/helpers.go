@@ -1,24 +1,20 @@
 package mafia_domain
 
 import (
-	"fmt"
 	"time"
-	// "sync/atomic"
 
 	proto "soa.mafia-game/proto/mafia-game"
+	party_model "soa.mafia-game/server/domain/models/party"
 )
 
 func (game *MafiaGame) AddPlayer(login string) (bool, Event) {
-	/*
-		check if user login is unique for party
-		add player to party
-	*/
-
 	for _, user_login := range game.users {
 		if user_login == login {
 			return false, Event{}
 		}
 	}
+	game.guard.Lock()
+	defer game.guard.Unlock()
 	game.users = append(game.users, login)
 	game.distribution.AddPlayer(login)
 
@@ -27,10 +23,6 @@ func (game *MafiaGame) AddPlayer(login string) (bool, Event) {
 }
 
 func (game *MafiaGame) RemovePlayer(login string) (bool, Event) {
-	/*
-		check if user login is unique for party
-		add player to party
-	*/
 	user_id := -1
 	for i, user_login := range game.users {
 		if user_login == login {
@@ -40,6 +32,8 @@ func (game *MafiaGame) RemovePlayer(login string) (bool, Event) {
 	if user_id == -1 {
 		return false, Event{}
 	}
+	game.guard.Lock()
+	defer game.guard.Unlock()
 	game.users[user_id] = game.users[len(game.users)-1]
 	game.users = game.users[:len(game.users)-1] // delete user
 
@@ -69,11 +63,13 @@ func (game *MafiaGame) DistributeRoles(party int) bool {
 	return game.distribution.DistributeRoles(party)
 }
 
-func (game *MafiaGame) IsAlive(login string) bool {
+func (game *MafiaGame) IsPlayerAlive(login string) bool {
 	return game.is_alive[login]
 }
 
 func (game *MafiaGame) Kill(login string) {
+	game.guard.Lock()
+	defer game.guard.Unlock()
 	game.is_alive[login] = false
 }
 
@@ -122,25 +118,25 @@ func (game *MafiaGame) Winner(party int) proto.Roles {
 }
 
 func (game *MafiaGame) VoteFor(voter_login string, guess string) {
+	game.guard.Lock()
+	defer game.guard.Unlock()
+	game.ghost[voter_login] = make(chan string, 1)
 	party := game.GetParty(voter_login)
 	cnt, exist := game.votes_cnt[party]
 	if !exist {
 		game.votes_cnt[party] = make(map[string]int)
 		cnt = game.votes_cnt[party]
 	}
-	cnt[guess] += 1
 	game.voted[party] += 1
-
-	game.ghost[voter_login] = make(chan string, 1)
+	if game.IsPlayerAlive(voter_login) {
+		cnt[guess] += 1
+	}
 }
 
 func (game *MafiaGame) WaitForEverybody(user_login string) string {
 	party := game.GetParty(user_login)
-	alive := game.GetAliveMembers(party)
-	alive_cnt := int32(len(alive))
-	game.mut.Lock()
-	if game.voted[party] == alive_cnt {
-		fmt.Printf("in %s alive %v, voted %v\n", user_login, len(alive), game.voted[party])
+	game.guard.Lock()
+	if game.voted[party] == party_model.PARTY_SIZE {
 		game.voted[party] = 0
 		ghost := user_login
 		for player := range game.votes_cnt[party] {
@@ -151,17 +147,12 @@ func (game *MafiaGame) WaitForEverybody(user_login string) string {
 		for key := range game.votes_cnt[party] {
 			delete(game.votes_cnt[party], key)
 		}
-		// next unblock every waiter
-		game.Kill(ghost)
-		for _, user := range alive {
-			fmt.Printf("in %s send unlock for %s\n", user_login, user)
+		game.is_alive[ghost] = false
+		for _, user := range game.GetMembers(party) {
 			game.ghost[user] <- ghost
 		}
 	}
-	game.mut.Unlock()
-	fmt.Printf("in %s wait to get ghost\n", user_login)
+	game.guard.Unlock()
 	ghost := <-game.ghost[user_login]
-	fmt.Printf("in %s get ghost %s\n", user_login, ghost)
-
 	return ghost
 }

@@ -14,9 +14,6 @@ import (
 )
 
 func main() {
-	// c := make(chan int, 100)
-	// c <- 23
-	// fmt.Printf("%v, %v\n", c, <- c)
 	lis, err := net.Listen("tcp", ":9000")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

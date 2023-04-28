@@ -3,24 +3,33 @@ package game
 import (
 	"context"
 	"fmt"
+	"time"
 
 	domain_client "soa.mafia-game/client/domain/mafia-client"
 	"soa.mafia-game/client/domain/models/user"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
-func (game *Game) Start(grpcClient *domain_client.Client) error {
+func (game *Game) PrintAlive() {
+	fmt.Printf("Alive members of this session are: ")
+	for _, player := range game.alive {
+		fmt.Printf("%s ", player)
+	}
+	fmt.Println()
+}
+
+func (game *Game) Start(ctx context.Context, grpcClient *domain_client.Client) error {
 	for {
-		fmt.Printf("Alive members of this session are: ")
-		for _, player := range game.alive {
-			fmt.Printf("%s ", player)
-		}
-		fmt.Println()
-		err := game.player.MakeNightMove(game.alive, grpcClient)
+		game.PrintAlive()
+		ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second))
+		defer cancel()
+		err := game.player.MakeNightMove(ctx, game.alive, grpcClient)
 		if err != nil {
 			return err
 		}
-		rsp, err := grpcClient.StartDay(context.TODO(), &proto.DayRequest{Login: game.player.GetLogin()})
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(time.Second))
+		defer cancel()
+		rsp, err := grpcClient.StartDay(ctx, &proto.DayRequest{Login: game.player.GetLogin()})
 		if err != nil {
 			return err
 		}
@@ -31,16 +40,11 @@ func (game *Game) Start(grpcClient *domain_client.Client) error {
 			fmt.Printf("This night %s was murdured\n", rsp.Victim)
 		}
 		game.alive = rsp.Alive
-		// if !rsp.GameStatus.Active {
-		// 	if rsp.GameStatus.Winner == proto.Roles_Civilian {
-		// 		fmt.Printf("Civilians won!\n")
-		// 	} else {
-		// 		fmt.Printf("Mafia won =(\n")
-		// 	}
-		// 	break
-		// }
 		fmt.Println("Start day")
-		err = game.player.VoteForMafia(game.alive, grpcClient)
+		game.PrintAlive()
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(time.Second))
+		defer cancel()
+		err = game.player.VoteForMafia(ctx, game.alive, grpcClient)
 		if err != nil {
 			return err
 		}

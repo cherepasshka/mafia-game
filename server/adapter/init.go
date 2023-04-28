@@ -11,11 +11,11 @@ type ServerAdapter struct {
 	proto.UnimplementedMafiaServiceServer
 	game        *mafia_domain.MafiaGame
 	connections map[string]chan mafia_domain.Event
-	mut         sync.Mutex
+	guard       sync.Mutex
 
 	// TODO
-	start_next_day map[string]chan bool
-	cnt            int
+	victims       map[string]chan string
+	moved_players map[int]int
 }
 
 func New() *ServerAdapter {
@@ -23,7 +23,7 @@ func New() *ServerAdapter {
 		game:        mafia_domain.NewGame(),
 		connections: make(map[string]chan mafia_domain.Event),
 
-		start_next_day: make(map[string]chan bool),
-		cnt:            0,
+		victims:       make(map[string]chan string),
+		moved_players: make(map[int]int),
 	}
 }

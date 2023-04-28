@@ -20,10 +20,10 @@ type MafiaGame struct {
 	users        []string
 	is_alive     map[string]bool
 
-	mut          sync.Mutex
+	guard        sync.Mutex
 	ghost        map[string]chan string
 	votes_cnt    map[int]map[string]int
 	voted        map[int]int32
-	RecentVictim string // TODO: for each party
+	RecentVictim map[int]string
 	Events       []Event
 }

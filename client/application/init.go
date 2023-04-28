@@ -43,7 +43,7 @@ func (app *mafiaApplication) Start(host string, port int) error {
 	}
 	fmt.Printf("Your session is ready, you are %v\n", role)
 	app.game = game.New(models.MakeUser(login, role), readiness.Players)
-	return app.game.Start(app.grpcClient)
+	return app.game.Start(context.Background(), app.grpcClient)
 }
 
 func (app *mafiaApplication) Stop() {
