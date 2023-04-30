@@ -5,7 +5,10 @@ import (
 )
 
 const (
-	PARTY_SIZE = 5
+	PARTY_SIZE    = 4
+	CIVILIANS     = 2
+	MAFIAS        = 1
+	COMMISSIONERS = 1
 )
 
 type PartiesDistribution struct {

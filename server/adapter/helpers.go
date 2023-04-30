@@ -48,6 +48,8 @@ func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, user *proto.
 }
 
 func (adapter *ServerAdapter) CloseChannels(user_login string) {
+	adapter.guard.Lock()
+	defer adapter.guard.Unlock()
 	conection, exist := adapter.connections[user_login]
 	if exist {
 		close(conection)
@@ -71,8 +73,15 @@ func (adapter *ServerAdapter) LeaveSession(ctx context.Context, request *proto.L
 }
 
 func (adapter *ServerAdapter) ListConnections(req *proto.ListConnectionsRequest, stream proto.MafiaService_ListConnectionsServer) error {
-	msgChannel := make(chan mafia_domain.Event, len(adapter.game.Events)+1)
+	msgChannel, exist := adapter.connections[req.Login]
+	if exist {
+		close(msgChannel)
+		delete(adapter.connections, req.Login)
+	}
+	msgChannel = make(chan mafia_domain.Event, len(adapter.game.Events)+1)
+	adapter.guard.Lock()
 	adapter.connections[req.Login] = msgChannel
+	adapter.guard.Unlock()
 	for i := 0; i < len(adapter.game.Events); i++ {
 		msgChannel <- adapter.game.Events[i]
 	}
@@ -102,6 +111,7 @@ func (adapter *ServerAdapter) ListConnections(req *proto.ListConnectionsRequest,
 			err := stream.Send(response)
 			if err != nil {
 				close(msgChannel)
+				delete(adapter.connections, req.Login)
 				return err
 			}
 			if response.Readiness.SessionReady {
@@ -115,6 +125,8 @@ func (adapter *ServerAdapter) MakeMove(ctx context.Context, req *proto.MoveReque
 	role := adapter.game.GetRole(req.Login)
 	party := adapter.game.GetParty(req.Login)
 	response := &proto.MoveResponse{}
+	adapter.guard.Lock()
+	defer adapter.guard.Unlock()
 	if role == proto.Roles_Civilian {
 		adapter.moved_players[party]++
 	} else if role == proto.Roles_Commissioner {
@@ -134,8 +146,6 @@ func (adapter *ServerAdapter) MakeMove(ctx context.Context, req *proto.MoveReque
 			response.Accepted = false
 		}
 	}
-	adapter.guard.Lock()
-	defer adapter.guard.Unlock()
 	alive_cnt := len(adapter.game.GetAliveMembers(adapter.game.GetParty(req.Login)))
 	if adapter.moved_players[party] == alive_cnt {
 		adapter.game.Kill(adapter.game.RecentVictim[party])

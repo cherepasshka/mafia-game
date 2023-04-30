@@ -64,11 +64,15 @@ func (d *PartiesDistribution) DistributeRoles(party int) bool {
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(members), func(i, j int) { members[i], members[j] = members[j], members[i] })
 
-	d.roles[members[0]] = proto.Roles_Civilian
-	d.roles[members[1]] = proto.Roles_Civilian
-	d.roles[members[2]] = proto.Roles_Civilian
-	d.roles[members[3]] = proto.Roles_Mafia
-	d.roles[members[4]] = proto.Roles_Commissioner
+	for i := 0; i < CIVILIANS; i++ {
+		d.roles[members[i]] = proto.Roles_Civilian
+	}
+	for i := CIVILIANS; i < CIVILIANS+MAFIAS; i++ {
+		d.roles[members[i]] = proto.Roles_Mafia
+	}
+	for i := CIVILIANS + MAFIAS; i < CIVILIANS+MAFIAS+COMMISSIONERS; i++ {
+		d.roles[members[i]] = proto.Roles_Commissioner
+	}
 	return true
 }
 

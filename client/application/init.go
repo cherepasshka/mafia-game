@@ -7,6 +7,7 @@ import (
 	"soa.mafia-game/client/domain/game"
 	domain_client "soa.mafia-game/client/domain/mafia-client"
 	"soa.mafia-game/client/domain/models"
+	"soa.mafia-game/client/internal/utils/console"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
@@ -21,7 +22,6 @@ func New() *mafiaApplication {
 }
 
 func (app *mafiaApplication) Start(host string, port int) error {
-	fmt.Print("Hello! Welcome to Mafia game.\nEnter your login: ")
 	var err error
 	app.grpcClient, err = domain_client.New(host, port)
 	if err != nil {
@@ -46,7 +46,27 @@ func (app *mafiaApplication) Start(host string, port int) error {
 	}
 	fmt.Printf("Your session is ready, you are %v\n", role)
 	app.game = game.New(models.MakeUser(login, role), readiness.Players)
-	return app.game.Start(context.Background(), app.grpcClient)
+	for {
+		if err = app.game.Start(context.Background(), app.grpcClient); err != nil {
+			return err
+		}
+		proceed, err := console.AskPrompt("Do you want to continue?", []string{"yes", "no"})
+		if err != nil {
+			return err
+		}
+		if proceed == "no" {
+			break
+		}
+		readiness, err = app.WaitForSession(app.login)
+		if err != nil {
+			return err
+		}
+		if readiness == nil {
+			break
+		}
+		app.game = game.New(models.MakeUser(login, readiness.Role), readiness.Players)
+	}
+	return nil
 }
 
 func (app *mafiaApplication) Stop() {

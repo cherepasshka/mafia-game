@@ -1,13 +1,14 @@
 package application
 
 import (
-	"bufio"
+	// "bufio"
 	"context"
 	"fmt"
 	"io"
-	"os"
+	// "os"
 	"time"
 
+	"soa.mafia-game/client/internal/utils/console"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
@@ -28,23 +29,19 @@ func (app *mafiaApplication) trySetLogin(login string) (*proto.ConnectToSessionR
 }
 
 func (app *mafiaApplication) SetLogin() (string, *proto.SessionReadiness, error) {
-	reader := bufio.NewReader(os.Stdin)
-	login, err := reader.ReadString('\n')
+	login, err := console.Ask("Hello you! Welcome to Mafia game! Enter your login")
 	if err != nil {
 		return "", nil, err
 	}
-	login = login[:len(login)-1]
 	response, err := app.trySetLogin(login)
 	if err != nil {
 		return "", nil, err
 	}
 	for !response.Success {
-		fmt.Print("This login is busy. Please, take another: ")
-		login, err = reader.ReadString('\n')
+		login, err = console.Ask("This login is busy. Please, take another")
 		if err != nil {
 			return "", nil, err
 		}
-		login = login[:len(login)-1]
 		response, err = app.trySetLogin(login)
 		if err != nil {
 			return "", nil, err
@@ -68,6 +65,7 @@ func (app *mafiaApplication) WaitForSession(login string) (*proto.SessionReadine
 			return nil, err
 		}
 		if m.Readiness.SessionReady {
+			rsp.CloseSend()
 			return m.Readiness, nil
 		}
 		fmt.Printf("%v %v at %v\n", m.Login, m.State, m.Time.AsTime())
