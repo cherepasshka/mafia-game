@@ -65,6 +65,7 @@ func (adapter *ServerAdapter) LeaveSession(ctx context.Context, request *proto.L
 }
 
 func (adapter *ServerAdapter) ListConnections(req *proto.ListConnectionsRequest, stream proto.MafiaService_ListConnectionsServer) error {
+	adapter.game.EnterSession(req.Login)
 	msgChannel, exist := adapter.connections[req.Login]
 	if exist {
 		close(msgChannel)
@@ -180,4 +181,9 @@ func (adapter *ServerAdapter) GetStatus(ctx context.Context, req *proto.StatusRe
 			Winner: adapter.game.Winner(adapter.game.GetParty(req.Login)),
 		},
 	}, nil
+}
+
+func (adapter *ServerAdapter) ExitGameSession(ctx context.Context, req *proto.User) (*proto.ExitGameSessionResponse, error) {
+	adapter.game.ExitSession(req.Name)
+	return &proto.ExitGameSessionResponse{}, nil
 }

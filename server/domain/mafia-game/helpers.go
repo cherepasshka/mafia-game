@@ -16,7 +16,6 @@ func (game *MafiaGame) AddPlayer(login string) (bool, Event) {
 	game.guard.Lock()
 	defer game.guard.Unlock()
 	game.users = append(game.users, login)
-	game.distribution.AddPlayer(login)
 
 	game.Events = append(game.Events, Event{User: login, Status: proto.State_connected, Time: time.Now()})
 	return true, game.Events[len(game.Events)-1]
@@ -157,4 +156,16 @@ func (game *MafiaGame) WaitForEverybody(user_login string) string {
 	game.guard.Unlock()
 	ghost := <-game.ghost[user_login]
 	return ghost
+}
+
+func (game *MafiaGame) ExitSession(user_login string) {
+	game.guard.Lock()
+	defer game.guard.Unlock()
+	game.distribution.RemovePlayer(user_login)
+}
+
+func (game *MafiaGame) EnterSession(user_login string) {
+	game.guard.Lock()
+	defer game.guard.Unlock()
+	game.distribution.AddPlayer(user_login)
 }

@@ -20,7 +20,10 @@ func (d *PartiesDistribution) AddPlayer(user_login string) {
 }
 
 func (d *PartiesDistribution) RemovePlayer(user_login string) {
-	party := d.party[user_login]
+	party, ok := d.party[user_login]
+	if !ok {
+		return
+	}
 	if d.party_size[party] == PARTY_SIZE {
 		d.non_full_party_ids = append(d.non_full_party_ids, party)
 	}

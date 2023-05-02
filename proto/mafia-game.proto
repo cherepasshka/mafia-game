@@ -94,6 +94,10 @@ message StatusResponse{
     GameStatus game_status = 2;
 }
 
+message ExitGameSessionResponse {
+
+}
+
 service MafiaService {
     rpc ConnectToSession(User) returns (ConnectToSessionResponse) {}
     rpc LeaveSession(LeaveSessionRequest) returns (LeaveSessionResponse) {}
@@ -102,4 +106,5 @@ service MafiaService {
     rpc MakeMove(MoveRequest) returns (MoveResponse) {}
     rpc StartDay(DayRequest) returns (DayResponse) {}
     rpc GetStatus(StatusRequest) returns (StatusResponse) {}
+    rpc ExitGameSession(User) returns (ExitGameSessionResponse) {}
 }

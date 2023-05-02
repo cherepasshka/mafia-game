@@ -48,7 +48,7 @@ func (game *Game) Start(ctx context.Context, grpcClient *domain_client.Client) e
 		if err != nil {
 			return err
 		}
-		rsp1, err := grpcClient.GetStatus(context.TODO(), &proto.StatusRequest{Login: game.player.GetLogin()})
+		rsp1, err := grpcClient.GetStatus(ctx, &proto.StatusRequest{Login: game.player.GetLogin()})
 		if err != nil {
 			return err
 		}
@@ -59,6 +59,7 @@ func (game *Game) Start(ctx context.Context, grpcClient *domain_client.Client) e
 			} else {
 				fmt.Printf("Mafia won =(\n")
 			}
+			grpcClient.ExitGameSession(ctx, &proto.User{Name: game.player.GetLogin()})
 			break
 		}
 	}

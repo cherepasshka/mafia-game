@@ -64,6 +64,7 @@ func (app *mafiaApplication) Start(host string, port int) error {
 		if readiness == nil {
 			break
 		}
+		role = readiness.Role
 		app.game = game.New(models.MakeUser(login, readiness.Role), readiness.Players)
 	}
 	return nil
