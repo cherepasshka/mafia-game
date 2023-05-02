@@ -1,11 +1,12 @@
 package main
 
 import (
-	// "context"
 	// "fmt"
-	// "fmt"
+	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 
 	"google.golang.org/grpc"
 
@@ -14,12 +15,26 @@ import (
 )
 
 func main() {
-	lis, err := net.Listen("tcp", ":9000")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "9000"
+	}
+	address := fmt.Sprintf(":%v", port)
+	lis, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	srv := grpc.NewServer()
 	proto.RegisterMafiaServiceServer(srv, mafia_server.New())
-	log.Printf("Start serving")
-	log.Fatalln(srv.Serve(lis))
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+	go func() {
+		log.Printf("Start serving at address %s", address)
+		if err = srv.Serve(lis); err != nil {
+			log.Fatal(err)
+		}
+		stop <- os.Interrupt
+	}()
+	<-stop
+	srv.Stop()
 }

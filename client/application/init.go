@@ -70,7 +70,9 @@ func (app *mafiaApplication) Start(host string, port int) error {
 	return nil
 }
 
-func (app *mafiaApplication) Stop() {
-	app.grpcClient.LeaveSession(context.Background(), &proto.LeaveSessionRequest{User: &proto.User{Name: app.login}})
-	app.grpcClient.Stop()
+func (app *mafiaApplication) Stop(ctx context.Context) {
+	if app.grpcClient != nil {
+		app.grpcClient.LeaveSession(ctx, &proto.LeaveSessionRequest{User: &proto.User{Name: app.login}})
+		app.grpcClient.Stop()
+	}
 }

@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"syscall"
+	"time"
 
 	flag "github.com/spf13/pflag"
 	"soa.mafia-game/client/application"
@@ -18,21 +18,22 @@ func main() {
 	flag.StringVar(&host, "host", "", "specifies server host")
 	flag.Parse()
 
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
-	defer cancel()
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
 
 	log.Println("Client running ...")
 	app := application.New()
 	go func() {
+		log.Printf("Connecting to server %s:%v", host, port)
 		err := app.Start(host, port)
 		if err != nil {
 			log.Fatal(err)
 		}
-		app.Stop()
-		os.Exit(0)
+		stop <- os.Interrupt
 	}()
-	<-ctx.Done()
-
-	app.Stop()
+	<-stop
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	app.Stop(ctx)
 
 }
