@@ -57,6 +57,8 @@ func (game *MafiaGame) GetRole(user string) proto.Roles {
 
 func (game *MafiaGame) DistributeRoles(party int) bool {
 	members := game.GetMembers(party)
+	game.guard.Lock()
+	defer game.guard.Unlock()
 	for _, member := range members {
 		game.is_alive[member] = true
 	}
@@ -102,7 +104,7 @@ func (game *MafiaGame) CountRole(party int, role proto.Roles) int {
 func (game *MafiaGame) IsActive(party int) bool {
 	mafia_cnt := game.CountRole(party, proto.Roles_Mafia)
 	civilian_cnt := game.CountRole(party, proto.Roles_Civilian)
-	return !(mafia_cnt == 0 || civilian_cnt == mafia_cnt)
+	return !(mafia_cnt == 0 || civilian_cnt <= mafia_cnt)
 }
 
 func (game *MafiaGame) Winner(party int) proto.Roles {
@@ -111,7 +113,7 @@ func (game *MafiaGame) Winner(party int) proto.Roles {
 	if mafia_cnt == 0 {
 		return proto.Roles_Civilian
 	}
-	if civilian_cnt == mafia_cnt {
+	if civilian_cnt <= mafia_cnt {
 		return proto.Roles_Mafia
 	}
 	return proto.Roles_Undefined

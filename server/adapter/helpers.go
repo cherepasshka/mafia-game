@@ -35,14 +35,6 @@ func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, user *proto.
 		channel <- event
 	}
 	fmt.Printf("Hi %v!\n", user.Name)
-	if adapter.game.SessionReady(user.Name) {
-		if adapter.game.DistributeRoles(adapter.game.GetParty(user.Name)) {
-			response.Readiness.SessionReady = true
-			response.Readiness.Role = adapter.game.GetRole(user.Name)
-			response.Readiness.Players = adapter.game.GetMembers(adapter.game.GetParty(user.Name))
-			adapter.SendReadinessNotification(adapter.game.GetMembers(adapter.game.GetParty(user.Name)))
-		}
-	}
 	adapter.victims[user.Name] = make(chan string, 1)
 	return response, nil
 }
@@ -84,6 +76,11 @@ func (adapter *ServerAdapter) ListConnections(req *proto.ListConnectionsRequest,
 	adapter.guard.Unlock()
 	for i := 0; i < len(adapter.game.Events); i++ {
 		msgChannel <- adapter.game.Events[i]
+	}
+	if adapter.game.SessionReady(req.Login) {
+		if adapter.game.DistributeRoles(adapter.game.GetParty(req.Login)) {
+			adapter.SendReadinessNotification(adapter.game.GetMembers(adapter.game.GetParty(req.Login)))
+		}
 	}
 	for {
 		select {

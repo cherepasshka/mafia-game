@@ -44,9 +44,9 @@ func (app *mafiaApplication) Start(host string, port int) error {
 		}
 		role = readiness.Role
 	}
-	fmt.Printf("Your session is ready, you are %v\n", role)
 	app.game = game.New(models.MakeUser(login, role), readiness.Players)
 	for {
+		fmt.Printf("Your session is ready, you are %v\n", role)
 		if err = app.game.Start(context.Background(), app.grpcClient); err != nil {
 			return err
 		}
