@@ -4,11 +4,6 @@ option go_package = "proto/mafia-game";
 
 import "google/protobuf/timestamp.proto";
 
-message User {
-    string name = 1;
-    Roles role = 2;
-}
-
 enum Roles {
     Mafia = 0;
     Commissioner = 1;
@@ -27,10 +22,6 @@ message ConnectToSessionResponse {
     SessionReadiness readiness = 2;
 }
 
-message LeaveSessionRequest {
-    User user = 1;
-}
-
 message LeaveSessionResponse {
     bool success = 1;
 }
@@ -45,10 +36,6 @@ message ListConnectionsResponse {
     State state = 2;
     google.protobuf.Timestamp time = 3;
     SessionReadiness readiness = 4;
-}
-
-message ListConnectionsRequest {
-    string login = 1;
 }
 
 message VoteForMafiaRequest {
@@ -68,7 +55,7 @@ message MoveRequest {
 
 message MoveResponse {
     bool accepted = 1;
-    string reason = 2; // TODO
+    string reason = 2;
 }
 
 message GameStatus {
@@ -76,17 +63,9 @@ message GameStatus {
     Roles winner = 2;
 }
 
-message DayRequest {
-    string login = 1;
-}
-
 message DayResponse{
     string victim = 1;
     repeated string alive = 2;
-}
-
-message StatusRequest {
-    string login = 1;
 }
 
 message StatusResponse{
@@ -98,13 +77,17 @@ message ExitGameSessionResponse {
 
 }
 
+message DefaultRequest {
+    string login = 1;
+}
+
 service MafiaService {
-    rpc ConnectToSession(User) returns (ConnectToSessionResponse) {}
-    rpc LeaveSession(LeaveSessionRequest) returns (LeaveSessionResponse) {}
-    rpc ListConnections(ListConnectionsRequest) returns (stream ListConnectionsResponse) {}
+    rpc ConnectToSession(DefaultRequest) returns (ConnectToSessionResponse) {}
+    rpc LeaveSession(DefaultRequest) returns (LeaveSessionResponse) {}
+    rpc ListConnections(DefaultRequest) returns (stream ListConnectionsResponse) {}
     rpc VoteForMafia(VoteForMafiaRequest) returns (VoteForMafiaResponse) {}
     rpc MakeMove(MoveRequest) returns (MoveResponse) {}
-    rpc StartDay(DayRequest) returns (DayResponse) {}
-    rpc GetStatus(StatusRequest) returns (StatusResponse) {}
-    rpc ExitGameSession(User) returns (ExitGameSessionResponse) {}
+    rpc StartDay(DefaultRequest) returns (DayResponse) {}
+    rpc GetStatus(DefaultRequest) returns (StatusResponse) {}
+    rpc ExitGameSession(DefaultRequest) returns (ExitGameSessionResponse) {}
 }

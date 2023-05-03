@@ -29,7 +29,7 @@ func (game *Game) Start(ctx context.Context, grpcClient *domain_client.Client) e
 		}
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(time.Second))
 		defer cancel()
-		rsp, err := grpcClient.StartDay(ctx, &proto.DayRequest{Login: game.player.GetLogin()})
+		rsp, err := grpcClient.StartDay(ctx, &proto.DefaultRequest{Login: game.player.GetLogin()})
 		if err != nil {
 			return err
 		}
@@ -48,7 +48,7 @@ func (game *Game) Start(ctx context.Context, grpcClient *domain_client.Client) e
 		if err != nil {
 			return err
 		}
-		rsp1, err := grpcClient.GetStatus(ctx, &proto.StatusRequest{Login: game.player.GetLogin()})
+		rsp1, err := grpcClient.GetStatus(ctx, &proto.DefaultRequest{Login: game.player.GetLogin()})
 		if err != nil {
 			return err
 		}
@@ -59,7 +59,7 @@ func (game *Game) Start(ctx context.Context, grpcClient *domain_client.Client) e
 			} else {
 				fmt.Printf("Mafia won =(\n")
 			}
-			grpcClient.ExitGameSession(ctx, &proto.User{Name: game.player.GetLogin()})
+			grpcClient.ExitGameSession(ctx, &proto.DefaultRequest{Login: game.player.GetLogin()})
 			break
 		}
 	}

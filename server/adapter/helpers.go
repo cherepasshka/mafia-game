@@ -19,8 +19,8 @@ func (adapter *ServerAdapter) SendReadinessNotification(members []string) {
 	}
 }
 
-func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, user *proto.User) (*proto.ConnectToSessionResponse, error) {
-	success, event := adapter.game.AddPlayer(user.Name)
+func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, req *proto.DefaultRequest) (*proto.ConnectToSessionResponse, error) {
+	success, event := adapter.game.AddPlayer(req.Login)
 	response := &proto.ConnectToSessionResponse{
 		Success: success,
 		Readiness: &proto.SessionReadiness{
@@ -34,8 +34,8 @@ func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, user *proto.
 	for _, channel := range adapter.connections {
 		channel <- event
 	}
-	fmt.Printf("Hi %v!\n", user.Name)
-	adapter.victims[user.Name] = make(chan string, 1)
+	fmt.Printf("Hi %v!\n", req.Login)
+	adapter.victims[req.Login] = make(chan string, 1)
 	return response, nil
 }
 
@@ -54,17 +54,17 @@ func (adapter *ServerAdapter) CloseChannels(user_login string) {
 	}
 }
 
-func (adapter *ServerAdapter) LeaveSession(ctx context.Context, request *proto.LeaveSessionRequest) (*proto.LeaveSessionResponse, error) {
-	success, event := adapter.game.RemovePlayer(request.User.Name)
+func (adapter *ServerAdapter) LeaveSession(ctx context.Context, request *proto.DefaultRequest) (*proto.LeaveSessionResponse, error) {
+	success, event := adapter.game.RemovePlayer(request.Login)
 	for _, channel := range adapter.connections {
 		channel <- event
 	}
-	fmt.Printf("Bye %v!\n", request.User.Name)
-	adapter.CloseChannels(request.User.Name)
+	fmt.Printf("Bye %v!\n", request.Login)
+	adapter.CloseChannels(request.Login)
 	return &proto.LeaveSessionResponse{Success: success}, nil
 }
 
-func (adapter *ServerAdapter) ListConnections(req *proto.ListConnectionsRequest, stream proto.MafiaService_ListConnectionsServer) error {
+func (adapter *ServerAdapter) ListConnections(req *proto.DefaultRequest, stream proto.MafiaService_ListConnectionsServer) error {
 	adapter.game.EnterSession(req.Login)
 	msgChannel, exist := adapter.connections[req.Login]
 	if exist {
@@ -157,7 +157,7 @@ func (adapter *ServerAdapter) MakeMove(ctx context.Context, req *proto.MoveReque
 	return response, nil
 }
 
-func (adapter *ServerAdapter) StartDay(ctx context.Context, req *proto.DayRequest) (*proto.DayResponse, error) {
+func (adapter *ServerAdapter) StartDay(ctx context.Context, req *proto.DefaultRequest) (*proto.DayResponse, error) {
 	victim := <-adapter.victims[req.Login]
 	resp := &proto.DayResponse{
 		Victim: victim,
@@ -173,7 +173,7 @@ func (adapter *ServerAdapter) VoteForMafia(ctx context.Context, req *proto.VoteF
 	return response, nil
 }
 
-func (adapter *ServerAdapter) GetStatus(ctx context.Context, req *proto.StatusRequest) (*proto.StatusResponse, error) {
+func (adapter *ServerAdapter) GetStatus(ctx context.Context, req *proto.DefaultRequest) (*proto.StatusResponse, error) {
 	return &proto.StatusResponse{
 		Alive: adapter.game.GetAliveMembers(adapter.game.GetParty(req.Login)),
 		GameStatus: &proto.GameStatus{
@@ -183,7 +183,7 @@ func (adapter *ServerAdapter) GetStatus(ctx context.Context, req *proto.StatusRe
 	}, nil
 }
 
-func (adapter *ServerAdapter) ExitGameSession(ctx context.Context, req *proto.User) (*proto.ExitGameSessionResponse, error) {
-	adapter.game.ExitSession(req.Name)
+func (adapter *ServerAdapter) ExitGameSession(ctx context.Context, req *proto.DefaultRequest) (*proto.ExitGameSessionResponse, error) {
+	adapter.game.ExitSession(req.Login)
 	return &proto.ExitGameSessionResponse{}, nil
 }

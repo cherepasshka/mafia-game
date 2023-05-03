@@ -1,11 +1,9 @@
 package application
 
 import (
-	// "bufio"
 	"context"
 	"fmt"
 	"io"
-	// "os"
 	"time"
 
 	"soa.mafia-game/client/internal/utils/console"
@@ -15,9 +13,8 @@ import (
 func (app *mafiaApplication) trySetLogin(login string) (*proto.ConnectToSessionResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	response, err := app.grpcClient.ConnectToSession(ctx, &proto.User{
-		Name: login,
-		Role: proto.Roles_Undefined,
+	response, err := app.grpcClient.ConnectToSession(ctx, &proto.DefaultRequest{
+		Login: login,
 	})
 	if err != nil {
 		return nil, err
@@ -52,7 +49,7 @@ func (app *mafiaApplication) SetLogin() (string, *proto.SessionReadiness, error)
 
 func (app *mafiaApplication) WaitForSession(login string) (*proto.SessionReadiness, error) {
 	ctx := context.Background()
-	rsp, err := app.grpcClient.ListConnections(ctx, &proto.ListConnectionsRequest{Login: login})
+	rsp, err := app.grpcClient.ListConnections(ctx, &proto.DefaultRequest{Login: login})
 	if err != nil {
 		return nil, err
 	}
