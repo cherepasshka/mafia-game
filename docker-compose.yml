@@ -1,0 +1,8 @@
+version: "3"
+
+services:
+  masia-server:
+    image: cherepashka/soa-practice-2:mafia-server
+    command: go run server/cmd/main.go
+    ports: 
+      - 9000:9000
