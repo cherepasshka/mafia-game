@@ -12,9 +12,9 @@ protoc --go_out=. proto/mafia-game.proto --go-grpc_out=.
 ```
 
 ### 1. Запуск сервера
-По умлочанию сервер поднимается на 9000 порту TCP
+По умолчанию сервер поднимается на 9000 порту TCP
 
-С помощью `docker-compose`:
+Запуск с помощью `docker-compose`:
 ```bash
 docker-compose up
 ```
