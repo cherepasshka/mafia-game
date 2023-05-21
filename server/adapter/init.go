@@ -12,6 +12,7 @@ type ServerAdapter struct {
 	game        *mafia_domain.MafiaGame
 	connections map[string]chan mafia_domain.Event
 	guard       sync.Mutex
+	conn_guard  sync.Mutex
 
 	victims       map[string]chan string
 	moved_players map[int]int
