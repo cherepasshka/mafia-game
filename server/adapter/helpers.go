@@ -11,6 +11,8 @@ import (
 )
 
 func (adapter *ServerAdapter) SendReadinessNotification(members []string) {
+	adapter.conn_guard.Lock()
+	defer adapter.conn_guard.Unlock()
 	for _, member := range members {
 		channel, exist := adapter.connections[member]
 		if exist {
@@ -31,6 +33,9 @@ func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, req *proto.D
 	if !success {
 		return response, nil
 	}
+
+	adapter.conn_guard.Lock()
+	defer adapter.conn_guard.Unlock()
 	for _, channel := range adapter.connections {
 		channel <- event
 	}
@@ -39,13 +44,19 @@ func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, req *proto.D
 	return response, nil
 }
 
+func (adapter *ServerAdapter) closeConnection(user_login string) {
+	adapter.conn_guard.Lock()
+	defer adapter.conn_guard.Unlock()
+	close(adapter.connections[user_login])
+	delete(adapter.connections, user_login)
+}
+
 func (adapter *ServerAdapter) CloseChannels(user_login string) {
 	adapter.guard.Lock()
 	defer adapter.guard.Unlock()
-	conection, exist := adapter.connections[user_login]
+	_, exist := adapter.connections[user_login]
 	if exist {
-		close(conection)
-		delete(adapter.connections, user_login)
+		adapter.closeConnection(user_login)
 	}
 	start_next_day, exist := adapter.victims[user_login]
 	if exist {
@@ -56,9 +67,11 @@ func (adapter *ServerAdapter) CloseChannels(user_login string) {
 
 func (adapter *ServerAdapter) LeaveSession(ctx context.Context, request *proto.DefaultRequest) (*proto.LeaveSessionResponse, error) {
 	success, event := adapter.game.RemovePlayer(request.Login)
+	adapter.conn_guard.Lock() 
 	for _, channel := range adapter.connections {
 		channel <- event
 	}
+	adapter.conn_guard.Unlock()
 	fmt.Printf("Bye %v!\n", request.Login)
 	adapter.CloseChannels(request.Login)
 	return &proto.LeaveSessionResponse{Success: success}, nil
@@ -66,15 +79,14 @@ func (adapter *ServerAdapter) LeaveSession(ctx context.Context, request *proto.D
 
 func (adapter *ServerAdapter) ListConnections(req *proto.DefaultRequest, stream proto.MafiaService_ListConnectionsServer) error {
 	adapter.game.EnterSession(req.Login)
-	msgChannel, exist := adapter.connections[req.Login]
+	_, exist := adapter.connections[req.Login]
 	if exist {
-		close(msgChannel)
-		delete(adapter.connections, req.Login)
+		adapter.closeConnection(req.Login)
 	}
-	msgChannel = make(chan mafia_domain.Event, len(adapter.game.Events)+1)
-	adapter.guard.Lock()
+	msgChannel := make(chan mafia_domain.Event, len(adapter.game.Events)+1)
+	adapter.conn_guard.Lock()
 	adapter.connections[req.Login] = msgChannel
-	adapter.guard.Unlock()
+	adapter.conn_guard.Unlock()
 	for i := 0; i < len(adapter.game.Events); i++ {
 		msgChannel <- adapter.game.Events[i]
 	}
@@ -86,8 +98,7 @@ func (adapter *ServerAdapter) ListConnections(req *proto.DefaultRequest, stream 
 	for {
 		select {
 		case <-stream.Context().Done():
-			close(msgChannel)
-			delete(adapter.connections, req.Login)
+			adapter.closeConnection(req.Login)
 			return nil
 		case msg, success := <-msgChannel:
 			if !success {
@@ -107,13 +118,9 @@ func (adapter *ServerAdapter) ListConnections(req *proto.DefaultRequest, stream 
 				response.Readiness.Players = adapter.game.GetMembers(adapter.game.GetParty(req.Login))
 			}
 			err := stream.Send(response)
-			if err != nil {
-				close(msgChannel)
-				delete(adapter.connections, req.Login)
+			if err != nil || response.Readiness.SessionReady {
+				adapter.closeConnection(req.Login)
 				return err
-			}
-			if response.Readiness.SessionReady {
-				return nil
 			}
 		}
 	}

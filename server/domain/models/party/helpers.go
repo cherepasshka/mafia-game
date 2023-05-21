@@ -9,6 +9,8 @@ import (
 )
 
 func (d *PartiesDistribution) AddPlayer(user_login string) {
+	d.party_mutex.Lock()
+	defer d.party_mutex.Unlock()
 	id := len(d.non_full_party_ids) - 1
 	party := d.non_full_party_ids[id]
 	d.party[user_login] = party
@@ -20,6 +22,8 @@ func (d *PartiesDistribution) AddPlayer(user_login string) {
 }
 
 func (d *PartiesDistribution) RemovePlayer(user_login string) {
+	d.party_mutex.Lock()
+	defer d.party_mutex.Unlock()
 	party, ok := d.party[user_login]
 	if !ok {
 		return
@@ -32,10 +36,14 @@ func (d *PartiesDistribution) RemovePlayer(user_login string) {
 }
 
 func (d *PartiesDistribution) GetUserParty(user_login string) int {
+	d.party_mutex.Lock()
+	defer d.party_mutex.Unlock()
 	return d.party[user_login]
 }
 
 func (d *PartiesDistribution) GetPartySize(party int) int {
+	d.party_mutex.Lock()
+	defer d.party_mutex.Unlock()
 	return d.party_size[party]
 }
 
@@ -44,7 +52,8 @@ func (d *PartiesDistribution) IsFull(party int) bool {
 }
 
 func (d *PartiesDistribution) GetParty(party int) []string {
-	// could be smarter but im lazy
+	d.party_mutex.Lock()
+	defer d.party_mutex.Unlock()
 	result := make([]string, PARTY_SIZE)
 	ind := 0
 	for user := range d.party {
@@ -58,7 +67,6 @@ func (d *PartiesDistribution) GetParty(party int) []string {
 }
 
 func (d *PartiesDistribution) DistributeRoles(party int) bool {
-
 	members := d.GetParty(party)
 	if len(members) != PARTY_SIZE {
 		return false
@@ -67,6 +75,8 @@ func (d *PartiesDistribution) DistributeRoles(party int) bool {
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(members), func(i, j int) { members[i], members[j] = members[j], members[i] })
 
+	d.roles_mutex.Lock()
+	defer d.roles_mutex.Unlock()
 	for i := 0; i < CIVILIANS; i++ {
 		d.roles[members[i]] = proto.Roles_Civilian
 	}
@@ -80,5 +90,7 @@ func (d *PartiesDistribution) DistributeRoles(party int) bool {
 }
 
 func (d *PartiesDistribution) GetRole(user string) proto.Roles {
+	d.roles_mutex.Lock()
+	defer d.roles_mutex.Unlock()
 	return d.roles[user]
 }
