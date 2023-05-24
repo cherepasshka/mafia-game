@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"soa.mafia-game/client/domain/game"
-	domain_client "soa.mafia-game/client/domain/mafia-client"
+	domain_client "soa.mafia-game/client/domain/grpc-client"
 	"soa.mafia-game/client/domain/models"
 	"soa.mafia-game/client/internal/utils/console"
 	proto "soa.mafia-game/proto/mafia-game"
@@ -44,7 +44,7 @@ func (app *mafiaApplication) Start(host string, port int) error {
 		}
 		role = readiness.Role
 	}
-	app.game = game.New(models.MakeUser(login, role), readiness.Players)
+	app.game = game.New(models.MakeUser(login, role), readiness.Players, readiness.SessionId)
 	for {
 		fmt.Printf("Your session is ready, you are %v\n", role)
 		if err = app.game.Start(context.Background(), app.grpcClient); err != nil {
@@ -65,7 +65,7 @@ func (app *mafiaApplication) Start(host string, port int) error {
 			break
 		}
 		role = readiness.Role
-		app.game = game.New(models.MakeUser(login, readiness.Role), readiness.Players)
+		app.game = game.New(models.MakeUser(login, readiness.Role), readiness.Players, readiness.SessionId)
 	}
 	return nil
 }

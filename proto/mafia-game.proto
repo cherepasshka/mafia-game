@@ -14,7 +14,8 @@ enum Roles {
 message SessionReadiness {
     bool session_ready = 1;
     Roles role = 2;
-    repeated string players = 3;
+    int32 session_id = 3;
+    repeated string players = 4;
 }
 
 message ConnectToSessionResponse {

@@ -28,6 +28,7 @@ func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, req *proto.D
 		Readiness: &proto.SessionReadiness{
 			SessionReady: false,
 			Role:         proto.Roles_Undefined,
+			SessionId:    int32(adapter.game.GetParty(req.Login)),
 		},
 	}
 	if !success {
@@ -67,7 +68,7 @@ func (adapter *ServerAdapter) CloseChannels(user_login string) {
 
 func (adapter *ServerAdapter) LeaveSession(ctx context.Context, request *proto.DefaultRequest) (*proto.LeaveSessionResponse, error) {
 	success, event := adapter.game.RemovePlayer(request.Login)
-	adapter.conn_guard.Lock() 
+	adapter.conn_guard.Lock()
 	for _, channel := range adapter.connections {
 		channel <- event
 	}
@@ -111,6 +112,7 @@ func (adapter *ServerAdapter) ListConnections(req *proto.DefaultRequest, stream 
 				Readiness: &proto.SessionReadiness{
 					SessionReady: msg.SessionReadiness,
 					Role:         proto.Roles_Undefined,
+					SessionId:    int32(adapter.game.GetParty(req.Login)),
 				},
 			}
 			if msg.SessionReadiness {

@@ -5,7 +5,8 @@ import (
 )
 
 type Game struct {
-	player  models.User
-	players []string
-	alive   []string
+	player    models.User
+	players   []string
+	alive     []string
+	sessionId int32
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	domain_client "soa.mafia-game/client/domain/mafia-client"
+	domain_client "soa.mafia-game/client/domain/grpc-client"
 	"soa.mafia-game/client/domain/models/user"
 	proto "soa.mafia-game/proto/mafia-game"
 )
