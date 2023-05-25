@@ -1,40 +1,21 @@
 package main
 
 import (
-	// "fmt"
-	"fmt"
-	"log"
-	"net"
 	"os"
 	"os/signal"
 
-	"google.golang.org/grpc"
-
-	proto "soa.mafia-game/proto/mafia-game"
-	mafia_server "soa.mafia-game/server/adapter"
+	"soa.mafia-game/server/application"
 )
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "9000"
-	}
-	address := fmt.Sprintf(":%v", port)
-	lis, err := net.Listen("tcp", address)
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-	srv := grpc.NewServer()
-	proto.RegisterMafiaServiceServer(srv, mafia_server.New())
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
+
+	app := application.New()
 	go func() {
-		log.Printf("Start serving at address %s", address)
-		if err = srv.Serve(lis); err != nil {
-			log.Fatal(err)
-		}
+		app.Start()
 		stop <- os.Interrupt
 	}()
 	<-stop
-	srv.Stop()
+	app.Stop()
 }
