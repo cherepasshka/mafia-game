@@ -1,17 +1,18 @@
-package random_strategy
+package user_strategy
 
 import (
 	"context"
 	"fmt"
 	"math/rand"
-	"time"
 
 	"soa.mafia-game/client/domain/models/user"
+	"soa.mafia-game/client/internal/utils/console"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
 type Mafia struct {
 	models.BaseUser
+	// ChatService *chat.KafkaChatService
 }
 
 func (user *Mafia) GetRole() proto.Roles {
@@ -19,16 +20,13 @@ func (user *Mafia) GetRole() proto.Roles {
 }
 
 func (user *Mafia) MakeNightMove(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) error {
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second))
-	defer cancel()
-	SetRandom()
 	if user.Status == models.Dead {
 		fmt.Println("You are dead, so you skip this night")
 		return nil
 	}
 	victim := user.Login
 	for victim == user.Login {
-		victim = alive_players[rand.Intn(len(alive_players))]
+		victim, _ = console.AskPrompt("Select victim", alive_players)
 	}
 	response, err := client.MakeMove(ctx, &proto.MoveRequest{Login: user.Login, Target: victim})
 	if err != nil {
@@ -48,16 +46,13 @@ func (user *Mafia) MakeNightMove(ctx context.Context, alive_players []string, cl
 }
 
 func (user *Mafia) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) error {
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second))
-	defer cancel()
-	SetRandom()
 	guess := user.Login
 	if user.Status == models.Dead {
 		fmt.Println("You are dead, so you skip this day vote")
 		guess = "None"
 	} else {
 		for guess == user.Login {
-			guess = alive_players[rand.Intn(len(alive_players))]
+			guess, _ = console.AskPrompt("Select your mafia guess", alive_players)
 		}
 		fmt.Printf("You voted for %s\n", guess)
 	}

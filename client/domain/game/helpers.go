@@ -3,7 +3,6 @@ package game
 import (
 	"context"
 	"fmt"
-	"time"
 
 	domain_client "soa.mafia-game/client/domain/grpc-client"
 	"soa.mafia-game/client/domain/models/user"
@@ -21,14 +20,10 @@ func (game *Game) PrintAlive() {
 func (game *Game) Start(ctx context.Context, grpcClient *domain_client.Client) error {
 	for {
 		game.PrintAlive()
-		ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second))
-		defer cancel()
 		err := game.player.MakeNightMove(ctx, game.alive, grpcClient)
 		if err != nil {
 			return err
 		}
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(time.Second))
-		defer cancel()
 		rsp, err := grpcClient.StartDay(ctx, &proto.DefaultRequest{Login: game.player.GetLogin()})
 		if err != nil {
 			return err
@@ -42,8 +37,6 @@ func (game *Game) Start(ctx context.Context, grpcClient *domain_client.Client) e
 		game.alive = rsp.Alive
 		fmt.Println("Start day")
 		game.PrintAlive()
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(time.Second))
-		defer cancel()
 		err = game.player.VoteForMafia(ctx, game.alive, grpcClient)
 		if err != nil {
 			return err

@@ -1,10 +1,10 @@
-package random_strategy
+package user_strategy
 
 import (
 	"context"
 	"fmt"
 	"math/rand"
-	"time"
+	// "time"
 
 	"soa.mafia-game/client/domain/models/user"
 	proto "soa.mafia-game/proto/mafia-game"
@@ -20,9 +20,9 @@ func (user *Commissioner) GetRole() proto.Roles {
 }
 
 func (user *Commissioner) MakeNightMove(ctx context.Context, players []string, client proto.MafiaServiceClient) error {
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second))
-	defer cancel()
-	SetRandom()
+	// ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second))
+	// defer cancel()
+	// SetRandom()
 	if user.Status == models.Dead {
 		fmt.Println("You are dead, so you skip this night")
 		return nil
@@ -46,9 +46,8 @@ func (user *Commissioner) MakeNightMove(ctx context.Context, players []string, c
 }
 
 func (user *Commissioner) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) error {
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second))
-	defer cancel()
-	SetRandom()
+	
+	// SetRandom()
 	guess := user.Login
 	if user.Status == models.Dead {
 		fmt.Println("You are dead, so you skip this day vote")
