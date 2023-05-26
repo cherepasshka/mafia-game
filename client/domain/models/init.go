@@ -6,7 +6,7 @@ import (
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
-func MakeUser(login string, role proto.Roles, kafkaBrokerUrls []string) models.User {
+func MakeUser(login string, role proto.Roles) models.User {
 	base := models.BaseUser{
 		Status: models.Alive,
 		Login:  login,

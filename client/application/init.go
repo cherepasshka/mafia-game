@@ -45,7 +45,7 @@ func (app *mafiaApplication) Start(host string, port int) error {
 		}
 		role = readiness.Role
 	}
-	app.game = game.New(models.MakeUser(login, role, []string{"kafka1:9092"}), readiness.Players, readiness.SessionId)
+	app.game = game.New(models.MakeUser(login, role), readiness.Players, readiness.SessionId)
 	for {
 		fmt.Printf("Your session is ready, you are %v\n", role)
 		if err = app.game.Start(context.Background(), app.grpcClient); err != nil {
@@ -66,7 +66,7 @@ func (app *mafiaApplication) Start(host string, port int) error {
 			break
 		}
 		role = readiness.Role
-		app.game = game.New(models.MakeUser(login, readiness.Role, []string{"kafka1:9092"}), readiness.Players, readiness.SessionId)
+		app.game = game.New(models.MakeUser(login, readiness.Role), readiness.Players, readiness.SessionId)
 	}
 	return nil
 }
