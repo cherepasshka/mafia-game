@@ -2,12 +2,16 @@ package chat
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	// "fmt"
 	"log"
 	"strings"
-	// "time"
 
+	// "time"
+	// "github.com/mgutz/ansi"
+	"github.com/fatih/color"
 	"github.com/segmentio/kafka-go"
+
 	"soa.mafia-game/client/internal/utils/console"
 	kafka_service "soa.mafia-game/kafka-help"
 )
@@ -17,7 +21,7 @@ func (service *ChatService) Start(user_login, sessionId string, partition int32)
 	defer cancel()
 	go service.Listen(ctx, sessionId, partition)
 
-	fmt.Printf("To stop messaging type `exit`")
+	color.Black("To stop messaging type `exit`")
 	for {
 		msg, err := console.Ask(">")
 		if err != nil {
@@ -44,16 +48,19 @@ func (service *ChatService) Listen(ctx context.Context, sessionId string, partit
 	reader.SetOffset(0)
 
 	for {
-		
-		message, err := reader.ReadMessage(context.Background())
+
+		message, err := reader.ReadMessage(ctx)
 		if err != nil {
-			log.Printf("%v\n", err)
-			continue
+			if errors.Is(context.Canceled, err) {
+				return
+			} else {
+				log.Printf("%v\n", err)
+			}
 		}
-		fmt.Printf("%v: %v\n", message.Key, message.Value)
-		select {
-			case <-ctx.Done():
-				return 
-		}
+		color.Black("%v says %v\n", string(message.Key), string(message.Value))
+		// select {
+		// 	case <-ctx.Done():
+		// 		return
+		// }
 	}
 }

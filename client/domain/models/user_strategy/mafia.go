@@ -52,7 +52,7 @@ func (user *Mafia) VoteForMafia(ctx context.Context, alive_players []string, cli
 		fmt.Println("You are dead, so you skip this day vote")
 		guess = "None"
 	} else {
-		//user.ChatService.Start(user.Login, user.Session, user.Partition)
+		user.ChatService.Start(user.Login, user.Session, user.Partition)
 		for guess == user.Login {
 			guess, _ = console.AskPrompt("Select your mafia guess", alive_players)
 		}

@@ -46,7 +46,7 @@ func (user *Commissioner) MakeNightMove(ctx context.Context, players []string, c
 }
 
 func (user *Commissioner) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) error {
-	
+
 	// SetRandom()
 	guess := user.Login
 	if user.Status == models.Dead {

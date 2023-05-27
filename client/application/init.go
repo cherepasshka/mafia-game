@@ -3,14 +3,14 @@ package application
 import (
 	"context"
 	"fmt"
-	"log"
+	// "log"
 
 	// "soa.mafia-game/chat"
 	"soa.mafia-game/client/domain/game"
 	domain_client "soa.mafia-game/client/domain/grpc-client"
 	"soa.mafia-game/client/domain/models"
 	"soa.mafia-game/client/internal/utils/console"
-	kafka_service "soa.mafia-game/kafka-help"
+	// kafka_service "soa.mafia-game/kafka-help"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
@@ -36,10 +36,10 @@ func (app *mafiaApplication) Start(host string, port int) error {
 	}
 	app.login = login
 
-	log.Printf("try to connect\n")
-	producer, _ := kafka_service.GetNewProducer("localhost:9092")
-	log.Printf("try to produce\n")
-	kafka_service.Produce("caba", "hi", login, 0, producer)
+	// log.Printf("try to connect\n")
+	// producer, _ := kafka_service.GetNewProducer("localhost:9092")
+	// log.Printf("try to produce\n")
+	// kafka_service.Produce("caba", "hi", login, 0, producer)
 	role := proto.Roles_Undefined
 	if readiness.SessionReady {
 		role = readiness.Role

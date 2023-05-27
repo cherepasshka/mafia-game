@@ -24,9 +24,9 @@ type User interface {
 }
 
 type BaseUser struct {
-	Login  string
-	Status LiveStatus
-	Session string
+	Login     string
+	Status    LiveStatus
+	Session   string
 	Partition int32
 }
 

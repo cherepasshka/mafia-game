@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"time"
 	"regexp"
+	"time"
 
 	"soa.mafia-game/client/internal/utils/console"
 	proto "soa.mafia-game/proto/mafia-game"
 )
+
 func validLogin(login string) bool {
 	isAlpha := regexp.MustCompile(`^[A-Za-z0-9]+$`).MatchString
 	return isAlpha(login)

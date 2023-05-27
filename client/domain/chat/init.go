@@ -9,8 +9,8 @@ import (
 )
 
 type ChatService struct {
-	producer *kafka.Producer
-	admin *kafka.AdminClient
+	producer      *kafka.Producer
+	admin         *kafka.AdminClient
 	brokerServers string
 }
 
@@ -25,8 +25,8 @@ func New(brokerServers string) (*ChatService, error) {
 		return nil, err
 	}
 	service := &ChatService{
-		producer: producer,
-		admin: admin,
+		producer:      producer,
+		admin:         admin,
 		brokerServers: brokerServers, // HERE SINGLE
 	}
 	return service, nil

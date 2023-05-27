@@ -2,6 +2,7 @@ package mafia_server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -29,14 +30,11 @@ func (adapter *ServerAdapter) SendReadinessNotification(members []string) {
 
 func (adapter *ServerAdapter) HandleUserMessages(ctx context.Context, user_login string) {
 	brokers := strings.Split(adapter.brokerServers, ",")
-	
+
 	reader := segkafka.NewReader(segkafka.ReaderConfig{
 		Brokers:   brokers,
 		Topic:     user_login,
 		Partition: 0,
-		// MinBytes:  10e3, // 10KB
-		// MaxBytes:  10e6, // 10MB
-		// MaxWait:   time.Millisecond * 10,
 	})
 	reader.SetOffset(0)
 	producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
@@ -45,19 +43,26 @@ func (adapter *ServerAdapter) HandleUserMessages(ctx context.Context, user_login
 	admin, _ := kafka.NewAdminClientFromProducer(producer)
 	kafka_service.CreateTopic(admin, groupSession, party.PARTY_SIZE) // TODO
 	for {
-		message, err := reader.ReadMessage(context.Background())
+		message, err := reader.ReadMessage(ctx)
 		if err != nil {
-			log.Printf("%v\n", err)
-			continue
+			if errors.Is(context.Canceled, err) {
+				return
+			} else {
+				log.Printf("%v\n", err)
+			}
 		}
 		fmt.Printf("GOT MESSAGE %v: %v\n", message.Key, message.Value)
 		for i := 0; i < party.PARTY_SIZE; i++ {
-			kafka_service.Produce(user_login, string(message.Value), groupSession, int32(i), producer)
+			err = kafka_service.Produce(user_login, string(message.Value), groupSession, int32(i), producer)
+			if err != nil {
+				log.Printf("GOT ERROR: %v\n", err)
+			}
 		}
-		select {
-			case <-ctx.Done():
-				return 
-		}
+		// select {
+		// 	case <-ctx.Done():
+		// 		return
+		// }
+		// log.Printf("After waiting\n")
 	}
 }
 
@@ -82,9 +87,13 @@ func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, req *proto.D
 		adapter.game.RemovePlayer(req.Login)
 		return &proto.ConnectToSessionResponse{Success: false}, err
 	}
-	kafka_service.Produce("aba", req.Login, req.Login, 0, producer)
+	// kafka_service.Produce("aba", req.Login, req.Login, 0, producer)
 	// TODO mb through ctx push canceling and deleting topics
-	go adapter.HandleUserMessages(ctx, req.Login)
+	newCtx, cancel := context.WithCancel(context.Background())
+	adapter.callbacks_guard.Lock()
+	adapter.user_callbacks[req.Login] = cancel
+	adapter.callbacks_guard.Unlock()
+	go adapter.HandleUserMessages(newCtx, req.Login)
 
 	adapter.conn_guard.Lock()
 	defer adapter.conn_guard.Unlock()
@@ -132,7 +141,7 @@ func (adapter *ServerAdapter) LeaveSession(ctx context.Context, request *proto.D
 	producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
 	admin, _ := kafka.NewAdminClientFromProducer(producer)
 	kafka_service.DeleteTopic(admin, request.Login)
-	
+
 	fmt.Printf("Bye %v!\n", request.Login)
 	adapter.CloseChannels(request.Login)
 	return &proto.LeaveSessionResponse{Success: success}, nil
@@ -181,7 +190,7 @@ func (adapter *ServerAdapter) ListConnections(req *proto.DefaultRequest, stream 
 					SessionReady: msg.SessionReadiness,
 					Role:         proto.Roles_Undefined,
 					SessionId:    adapter.getPartySessionId(req.Login),
-					Partition: int32(adapter.game.GetPartition(req.Login)),
+					Partition:    int32(adapter.game.GetPartition(req.Login)),
 				},
 			}
 			if msg.SessionReadiness {
@@ -262,10 +271,13 @@ func (adapter *ServerAdapter) GetStatus(ctx context.Context, req *proto.DefaultR
 }
 
 func (adapter *ServerAdapter) ExitGameSession(ctx context.Context, req *proto.DefaultRequest) (*proto.ExitGameSessionResponse, error) {
+	adapter.callbacks_guard.Lock()
+	adapter.user_callbacks[req.Login]()
+	adapter.callbacks_guard.Unlock()
 	partyId := adapter.getPartySessionId(req.Login)
 	producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
 	admin, _ := kafka.NewAdminClientFromProducer(producer)
-	kafka_service.DeleteTopic(admin, partyId) 
+	kafka_service.DeleteTopic(admin, partyId)
 	adapter.game.ExitSession(req.Login)
 	return &proto.ExitGameSessionResponse{}, nil
 }

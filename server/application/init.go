@@ -46,6 +46,6 @@ func (app *MafiaApplication) Start() {
 	}
 }
 
-func(app *MafiaApplication) Stop() {
+func (app *MafiaApplication) Stop() {
 	app.mafia_server.Stop()
 }
