@@ -5,12 +5,20 @@ import (
 	"fmt"
 	"io"
 	"time"
+	"regexp"
 
 	"soa.mafia-game/client/internal/utils/console"
 	proto "soa.mafia-game/proto/mafia-game"
 )
+func validLogin(login string) bool {
+	isAlpha := regexp.MustCompile(`^[A-Za-z0-9]+$`).MatchString
+	return isAlpha(login)
+}
 
 func (app *mafiaApplication) trySetLogin(login string) (*proto.ConnectToSessionResponse, error) {
+	if !validLogin(login) {
+		return &proto.ConnectToSessionResponse{Success: false}, nil
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	response, err := app.grpcClient.ConnectToSession(ctx, &proto.DefaultRequest{
@@ -26,7 +34,7 @@ func (app *mafiaApplication) trySetLogin(login string) (*proto.ConnectToSessionR
 }
 
 func (app *mafiaApplication) SetLogin() (string, *proto.SessionReadiness, error) {
-	login, err := console.Ask("Hello you! Welcome to Mafia game! Enter your login")
+	login, err := console.Ask("Hello you! Welcome to Mafia game! Enter your login, please use only alphanumeric symbols")
 	if err != nil {
 		return "", nil, err
 	}
@@ -35,7 +43,7 @@ func (app *mafiaApplication) SetLogin() (string, *proto.SessionReadiness, error)
 		return "", nil, err
 	}
 	for !response.Success {
-		login, err = console.Ask("This login is busy. Please, take another")
+		login, err = console.Ask("This login is busy or invalid (use only alphanumeric symbols). Please, take another")
 		if err != nil {
 			return "", nil, err
 		}
