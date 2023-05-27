@@ -50,6 +50,16 @@ func (game *MafiaGame) GetParty(user string) int {
 	return game.distribution.GetUserParty(user)
 }
 
+func (game *MafiaGame) GetPartition(user string) int {
+	members := game.distribution.GetParty(game.GetParty(user))
+	for i := range members {
+		if members[i] == user {
+			return i
+		}
+	}
+	return -1
+}
+
 func (game *MafiaGame) GetRole(user string) proto.Roles {
 	return game.distribution.GetRole(user)
 }

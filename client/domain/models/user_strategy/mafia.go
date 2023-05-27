@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	"soa.mafia-game/client/domain/chat"
 	"soa.mafia-game/client/domain/models/user"
 	"soa.mafia-game/client/internal/utils/console"
 	proto "soa.mafia-game/proto/mafia-game"
@@ -12,7 +13,7 @@ import (
 
 type Mafia struct {
 	models.BaseUser
-	// ChatService *chat.KafkaChatService
+	ChatService *chat.ChatService
 }
 
 func (user *Mafia) GetRole() proto.Roles {
@@ -51,6 +52,7 @@ func (user *Mafia) VoteForMafia(ctx context.Context, alive_players []string, cli
 		fmt.Println("You are dead, so you skip this day vote")
 		guess = "None"
 	} else {
+		//user.ChatService.Start(user.Login, user.Session, user.Partition)
 		for guess == user.Login {
 			guess, _ = console.AskPrompt("Select your mafia guess", alive_players)
 		}

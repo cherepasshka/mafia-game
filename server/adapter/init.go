@@ -3,8 +3,8 @@ package mafia_server
 import (
 	"sync"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"soa.mafia-game/chat"
+	// "github.com/confluentinc/confluent-kafka-go/kafka"
+	// "soa.mafia-game/kafka-help"
 	proto "soa.mafia-game/proto/mafia-game"
 	mafia_domain "soa.mafia-game/server/domain/mafia-game"
 )
@@ -19,12 +19,15 @@ type ServerAdapter struct {
 	victims       map[string]chan string
 	moved_players map[int]int
 
-	producer *kafka.Producer
+	// producer *kafka.Producer
+	brokerServers string
 }
 
-func New() *ServerAdapter {
-	producer, _ := chat.GetNewProducer() // TODO
-	
+func New(brokerServers string) (*ServerAdapter, error) {
+	// producer, err := kafka_service.GetNewProducer(brokerServers) // TODO
+	// if err != nil {
+	// 	return nil, err
+	// }
 	return &ServerAdapter{
 		game:        mafia_domain.NewGame(),
 		connections: make(map[string]chan mafia_domain.Event),
@@ -32,6 +35,6 @@ func New() *ServerAdapter {
 		victims:       make(map[string]chan string),
 		moved_players: make(map[int]int),
 
-		producer: producer,
-	}
+		brokerServers: brokerServers,
+	}, nil
 }

@@ -16,12 +16,17 @@ type MafiaApplication struct {
 	mafia_server *grpc.Server
 }
 
-func New() *MafiaApplication {
+func New() (*MafiaApplication, error) {
 	app := &MafiaApplication{
 		mafia_server: grpc.NewServer(),
 	}
-	proto.RegisterMafiaServiceServer(app.mafia_server, mafia_server.New())
-	return app
+	brokerServers := "kafka1:9092" // TODO: os.env
+	server, err := mafia_server.New(brokerServers)
+	if err != nil {
+		return nil, err
+	}
+	proto.RegisterMafiaServiceServer(app.mafia_server, server)
+	return app, nil
 }
 
 func (app *MafiaApplication) Start() {

@@ -1,29 +1,32 @@
-package chat
+package kafka_service
 
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 // TODO
-func GetNewProducer() (*kafka.Producer, error) {
+func GetNewProducer(brokerServers string) (*kafka.Producer, error) {
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": "kafka1:9092",
+		"bootstrap.servers": brokerServers, //"kafka1:9092",
 		//"client.id":         "prod-1TODO",
 		"acks":              "all",
 	})
+	log.Printf("After creating producer with brokers %v\n", brokerServers)
 	return producer, err
 }
 
-func Produce(key string, value string, topic string, producer *kafka.Producer) {
+func Produce(key string, value string, topic string, partition int32, producer *kafka.Producer) error {
 	deliveryChan := make(chan kafka.Event, 1)
-
+	defer close(deliveryChan)
+	
 	err := producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{
 			Topic:     &topic,
-			Partition: kafka.PartitionAny,
+			Partition: partition,
 		},
 		Key:   []byte(key),
 		Value: []byte(value),
@@ -31,19 +34,22 @@ func Produce(key string, value string, topic string, producer *kafka.Producer) {
 	}, deliveryChan)
 
 	if err != nil {
-		panic(err)
+		log.Printf("FAILED TO PRODUCE %v\n", err)
+		return err
 	}
 
 	e := <-deliveryChan
 	m := e.(*kafka.Message)
 
 	if m.TopicPartition.Error != nil {
-		fmt.Printf("delivery failed %v \n", m.TopicPartition.Error)
+		log.Printf("FAILED TO PRODUCE %v\n", err)
+		return m.TopicPartition.Error
 	} else {
 		fmt.Printf("message delivered topic: %s | key: %s\n", topic, string(key))
 	}
 
-	close(deliveryChan)
+	log.Printf("ALL FINE -___-")
+	return nil
 }
 
 func CreateTopic(admin *kafka.AdminClient, topicName string, numPartitions int) error {

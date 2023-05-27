@@ -7,7 +7,7 @@ COPY go.* /mafia-game/
 RUN go mod download
 ADD proto /mafia-game/proto/
 ADD server /mafia-game/server/
-ADD chat /mafia-game/chat/
+ADD kafka-help /mafia-game/kafka-help/
 
 RUN go build -tags musl -o myapp  /mafia-game/server/cmd/main.go
-ENTRYPOINT ["/mafia-game/myapp"]
+

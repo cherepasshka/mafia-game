@@ -1,10 +1,11 @@
-version: "3"
+version: "2"
 
 services:
   masia-server:
     build:
       context: .
       dockerfile: Dockerfile
+    command: /mafia-game/myapp
     ports: 
       - 9000:9000
     environment:
@@ -12,6 +13,7 @@ services:
       BROKER: kafka1
     depends_on:
       - kafka1
+      - zoo1
   
   zoo1:
     image: zookeeper

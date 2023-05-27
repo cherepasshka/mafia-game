@@ -3,12 +3,14 @@ package application
 import (
 	"context"
 	"fmt"
+	"log"
 
 	// "soa.mafia-game/chat"
 	"soa.mafia-game/client/domain/game"
 	domain_client "soa.mafia-game/client/domain/grpc-client"
 	"soa.mafia-game/client/domain/models"
 	"soa.mafia-game/client/internal/utils/console"
+	kafka_service "soa.mafia-game/kafka-help"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
@@ -33,6 +35,11 @@ func (app *mafiaApplication) Start(host string, port int) error {
 		return err
 	}
 	app.login = login
+
+	log.Printf("try to connect\n")
+	producer, _ := kafka_service.GetNewProducer("localhost:9092")
+	log.Printf("try to produce\n")
+	kafka_service.Produce("caba", "hi", login, 0, producer)
 	role := proto.Roles_Undefined
 	if readiness.SessionReady {
 		role = readiness.Role
@@ -45,7 +52,7 @@ func (app *mafiaApplication) Start(host string, port int) error {
 		}
 		role = readiness.Role
 	}
-	app.game = game.New(models.MakeUser(login, role), readiness.Players, readiness.SessionId)
+	app.game = game.New(models.MakeUser(login, role, readiness.SessionId, readiness.Partition), readiness.Players)
 	for {
 		fmt.Printf("Your session is ready, you are %v\n", role)
 		if err = app.game.Start(context.Background(), app.grpcClient); err != nil {
@@ -66,7 +73,7 @@ func (app *mafiaApplication) Start(host string, port int) error {
 			break
 		}
 		role = readiness.Role
-		app.game = game.New(models.MakeUser(login, readiness.Role), readiness.Players, readiness.SessionId)
+		app.game = game.New(models.MakeUser(login, readiness.Role, readiness.SessionId, readiness.Partition), readiness.Players)
 	}
 	return nil
 }

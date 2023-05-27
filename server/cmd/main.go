@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"os/signal"
 
@@ -11,7 +12,10 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 
-	app := application.New()
+	app, err := application.New()
+	if err != nil {
+		log.Fatal(err)
+	}
 	go func() {
 		app.Start()
 		stop <- os.Interrupt

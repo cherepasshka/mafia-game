@@ -3,11 +3,14 @@ package mafia_server
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	segkafka "github.com/segmentio/kafka-go"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"soa.mafia-game/chat"
+	"soa.mafia-game/kafka-help"
 	proto "soa.mafia-game/proto/mafia-game"
 	mafia_domain "soa.mafia-game/server/domain/mafia-game"
 	"soa.mafia-game/server/domain/models/party"
@@ -24,6 +27,40 @@ func (adapter *ServerAdapter) SendReadinessNotification(members []string) {
 	}
 }
 
+func (adapter *ServerAdapter) HandleUserMessages(ctx context.Context, user_login string) {
+	brokers := strings.Split(adapter.brokerServers, ",")
+	
+	reader := segkafka.NewReader(segkafka.ReaderConfig{
+		Brokers:   brokers,
+		Topic:     user_login,
+		Partition: 0,
+		// MinBytes:  10e3, // 10KB
+		// MaxBytes:  10e6, // 10MB
+		// MaxWait:   time.Millisecond * 10,
+	})
+	reader.SetOffset(0)
+	producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
+	groupSession := adapter.getPartySessionId(user_login)
+	log.Printf("START LISTENING %v\n", user_login)
+	admin, _ := kafka.NewAdminClientFromProducer(producer)
+	kafka_service.CreateTopic(admin, groupSession, party.PARTY_SIZE) // TODO
+	for {
+		message, err := reader.ReadMessage(context.Background())
+		if err != nil {
+			log.Printf("%v\n", err)
+			continue
+		}
+		fmt.Printf("GOT MESSAGE %v: %v\n", message.Key, message.Value)
+		for i := 0; i < party.PARTY_SIZE; i++ {
+			kafka_service.Produce(user_login, string(message.Value), groupSession, int32(i), producer)
+		}
+		select {
+			case <-ctx.Done():
+				return 
+		}
+	}
+}
+
 func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, req *proto.DefaultRequest) (*proto.ConnectToSessionResponse, error) {
 	success, event := adapter.game.AddPlayer(req.Login)
 	response := &proto.ConnectToSessionResponse{
@@ -31,22 +68,23 @@ func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, req *proto.D
 		Readiness: &proto.SessionReadiness{
 			SessionReady: false,
 			Role:         proto.Roles_Undefined,
-			SessionId:    int32(adapter.game.GetParty(req.Login)),
+			SessionId:    adapter.getPartySessionId(req.Login),
 		},
 	}
 	if !success {
 		return response, nil
 	}
 	// create topics
-	// producer, _ := chat.GetNewProducer()
-	admin, _ := kafka.NewAdminClientFromProducer(adapter.producer)
-	err := chat.CreateTopic(admin, req.Login, 1)
+	producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
+	admin, _ := kafka.NewAdminClientFromProducer(producer)
+	err := kafka_service.CreateTopic(admin, req.Login, 1)
 	if err != nil {
 		adapter.game.RemovePlayer(req.Login)
 		return &proto.ConnectToSessionResponse{Success: false}, err
 	}
-	chat.Produce("aba", "hi", req.Login, adapter.producer)
-	// go adapter.HandleUserMessages(req.Login)
+	kafka_service.Produce("aba", req.Login, req.Login, 0, producer)
+	// TODO mb through ctx push canceling and deleting topics
+	go adapter.HandleUserMessages(ctx, req.Login)
 
 	adapter.conn_guard.Lock()
 	defer adapter.conn_guard.Unlock()
@@ -56,6 +94,10 @@ func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, req *proto.D
 	fmt.Printf("Hi %v!\n", req.Login)
 	adapter.victims[req.Login] = make(chan string, 1)
 	return response, nil
+}
+
+func (adapter *ServerAdapter) getPartySessionId(user_login string) string {
+	return fmt.Sprintf("chat-%v", adapter.game.GetParty(user_login))
 }
 
 func (adapter *ServerAdapter) closeConnection(user_login string) {
@@ -87,10 +129,10 @@ func (adapter *ServerAdapter) LeaveSession(ctx context.Context, request *proto.D
 	}
 	adapter.conn_guard.Unlock()
 
-
-	admin, _ := kafka.NewAdminClientFromProducer(adapter.producer)
-	chat.DeleteTopic(admin, request.Login)
-	// chat.DeleteTopic(fmt.Sprintf("%s:%v", adapter.broker, adapter.brokerPort), request.Login)
+	producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
+	admin, _ := kafka.NewAdminClientFromProducer(producer)
+	kafka_service.DeleteTopic(admin, request.Login)
+	
 	fmt.Printf("Bye %v!\n", request.Login)
 	adapter.CloseChannels(request.Login)
 	return &proto.LeaveSessionResponse{Success: success}, nil
@@ -111,9 +153,14 @@ func (adapter *ServerAdapter) ListConnections(req *proto.DefaultRequest, stream 
 	}
 	if adapter.game.SessionReady(req.Login) {
 		if adapter.game.DistributeRoles(adapter.game.GetParty(req.Login)) {
-			partyId := fmt.Sprintf("chat-%v", adapter.game.GetParty(req.Login))
-			admin, _ := kafka.NewAdminClientFromProducer(adapter.producer)
-			chat.CreateTopic(admin, partyId, party.PARTY_SIZE) // TODO: TO CHECK THAT TOPIC WAS CREATED!!!
+			partyId := adapter.getPartySessionId(req.Login)
+			producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
+			admin, _ := kafka.NewAdminClientFromProducer(producer)
+			err := kafka_service.CreateTopic(admin, partyId, party.PARTY_SIZE)
+			if err != nil {
+				adapter.closeConnection(req.Login)
+				return err
+			}
 			adapter.SendReadinessNotification(adapter.game.GetMembers(adapter.game.GetParty(req.Login)))
 		}
 	}
@@ -133,7 +180,8 @@ func (adapter *ServerAdapter) ListConnections(req *proto.DefaultRequest, stream 
 				Readiness: &proto.SessionReadiness{
 					SessionReady: msg.SessionReadiness,
 					Role:         proto.Roles_Undefined,
-					SessionId:    int32(adapter.game.GetParty(req.Login)),
+					SessionId:    adapter.getPartySessionId(req.Login),
+					Partition: int32(adapter.game.GetPartition(req.Login)),
 				},
 			}
 			if msg.SessionReadiness {
@@ -214,9 +262,10 @@ func (adapter *ServerAdapter) GetStatus(ctx context.Context, req *proto.DefaultR
 }
 
 func (adapter *ServerAdapter) ExitGameSession(ctx context.Context, req *proto.DefaultRequest) (*proto.ExitGameSessionResponse, error) {
-	partyId := fmt.Sprintf("chat-%v", adapter.game.GetParty(req.Login))
-	admin, _ := kafka.NewAdminClientFromProducer(adapter.producer)
-	chat.DeleteTopic(admin, partyId) 
+	partyId := adapter.getPartySessionId(req.Login)
+	producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
+	admin, _ := kafka.NewAdminClientFromProducer(producer)
+	kafka_service.DeleteTopic(admin, partyId) 
 	adapter.game.ExitSession(req.Login)
 	return &proto.ExitGameSessionResponse{}, nil
 }
