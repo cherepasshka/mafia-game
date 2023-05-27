@@ -24,10 +24,6 @@ type ServerAdapter struct {
 }
 
 func New(brokerServers string) (*ServerAdapter, error) {
-	// producer, err := kafka_service.GetNewProducer(brokerServers) // TODO
-	// if err != nil {
-	// 	return nil, err
-	// }
 	return &ServerAdapter{
 		game:        mafia_domain.NewGame(),
 		connections: make(map[string]chan mafia_domain.Event),
