@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc"
 
 	proto "soa.mafia-game/proto/mafia-game"
-	mafia_server "soa.mafia-game/server/adapter"
+	mafia_server "soa.mafia-game/game-server/adapter"
 )
 
 type MafiaApplication struct {

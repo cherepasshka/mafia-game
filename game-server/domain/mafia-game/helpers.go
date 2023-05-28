@@ -4,7 +4,7 @@ import (
 	"time"
 
 	proto "soa.mafia-game/proto/mafia-game"
-	party_model "soa.mafia-game/server/domain/models/party"
+	party_model "soa.mafia-game/game-server/domain/models/party"
 )
 
 func (game *MafiaGame) AddPlayer(login string) (bool, Event) {

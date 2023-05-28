@@ -7,7 +7,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	proto "soa.mafia-game/proto/mafia-game"
-	mafia_domain "soa.mafia-game/server/domain/mafia-game"
+	mafia_domain "soa.mafia-game/game-server/domain/mafia-game"
 )
 
 func (adapter *ServerAdapter) SendReadinessNotification(members []string) {

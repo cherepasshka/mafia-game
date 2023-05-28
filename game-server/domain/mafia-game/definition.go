@@ -5,7 +5,7 @@ import (
 	"time"
 
 	proto "soa.mafia-game/proto/mafia-game"
-	"soa.mafia-game/server/domain/models/party"
+	"soa.mafia-game/game-server/domain/models/party"
 )
 
 type Event struct {

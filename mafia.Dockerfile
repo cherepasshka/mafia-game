@@ -6,8 +6,8 @@ WORKDIR /mafia-game/
 COPY go.* /mafia-game/
 RUN go mod download
 ADD proto /mafia-game/proto/
-ADD server /mafia-game/server/
+ADD game-server /mafia-game/game-server/
 ADD kafka-help /mafia-game/kafka-help/
 
-RUN go build -tags musl -o myapp  /mafia-game/server/cmd/main.go
+RUN go build -tags musl -o myapp  /mafia-game/game-server/cmd/main.go
 

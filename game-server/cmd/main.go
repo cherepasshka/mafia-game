@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"soa.mafia-game/server/application"
+	"soa.mafia-game/game-server/application"
 )
 
 func main() {

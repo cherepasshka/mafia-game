@@ -1,7 +1,7 @@
 package mafia_domain
 
 import (
-	"soa.mafia-game/server/domain/models/party"
+	"soa.mafia-game/game-server/domain/models/party"
 )
 
 func NewGame() *MafiaGame {
