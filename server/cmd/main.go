@@ -4,13 +4,14 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"soa.mafia-game/server/application"
 )
 
 func main() {
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
+	signal.Notify(stop, syscall.SIGINT)
 
 	app, err := application.New()
 	if err != nil {
@@ -18,7 +19,7 @@ func main() {
 	}
 	go func() {
 		app.Start()
-		stop <- os.Interrupt
+		stop <- syscall.SIGINT
 	}()
 	<-stop
 	app.Stop()

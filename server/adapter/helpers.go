@@ -2,19 +2,19 @@ package mafia_server
 
 import (
 	"context"
-	"errors"
+	// "errors"
 	"fmt"
-	"log"
-	"strings"
+	// "log"
+	// "strings"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
-	segkafka "github.com/segmentio/kafka-go"
+	// "github.com/confluentinc/confluent-kafka-go/kafka"
+	// segkafka "github.com/segmentio/kafka-go"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"soa.mafia-game/kafka-help"
+	// "soa.mafia-game/kafka-help"
 	proto "soa.mafia-game/proto/mafia-game"
 	mafia_domain "soa.mafia-game/server/domain/mafia-game"
-	"soa.mafia-game/server/domain/models/party"
+	// "soa.mafia-game/server/domain/models/party"
 )
 
 func (adapter *ServerAdapter) SendReadinessNotification(members []string) {
@@ -28,46 +28,46 @@ func (adapter *ServerAdapter) SendReadinessNotification(members []string) {
 	}
 }
 
-func (adapter *ServerAdapter) HandleUserMessages(ctx context.Context, user_login string) {
-	brokers := strings.Split(adapter.brokerServers, ",")
+// func (adapter *ServerAdapter) HandleUserMessages(ctx context.Context, user_login string) {
+// 	brokers := strings.Split(adapter.brokerServers, ",")
 
-	reader := segkafka.NewReader(segkafka.ReaderConfig{
-		Brokers:   brokers,
-		Topic:     user_login,
-		Partition: 0,
-		// GroupID: "clients",
-	})
-	reader.SetOffset(0)
-	producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
-	groupSession := adapter.getPartySessionId(user_login)
-	log.Printf("START LISTENING %v\n", user_login)
-	admin, _ := kafka.NewAdminClientFromProducer(producer)
-	kafka_service.CreateTopic(admin, groupSession, party.PARTY_SIZE) // TODO
-	for {
-		message, err := reader.ReadMessage(ctx)
-		if err != nil {
-			log.Printf("!!!!cancel %v, err %v", user_login, err)
-			if errors.Is(context.Canceled, err) {
-				log.Printf("REALLY CANCEL!!!!")
-				return
-			} else {
-				log.Printf("ERROR OCURED: %v\n", err)
-			}
-		}
-		fmt.Printf("GOT MESSAGE %v: %v\n", message.Key, message.Value)
-		for i := 0; i < party.PARTY_SIZE; i++ {
-			err = kafka_service.Produce(user_login, string(message.Value), groupSession, int32(i), producer)
-			if err != nil {
-				log.Printf("GOT ERROR: %v\n", err)
-			}
-		}
-		// select {
-		// 	case <-ctx.Done():
-		// 		return
-		// }
-		// log.Printf("After waiting\n")
-	}
-}
+// 	reader := segkafka.NewReader(segkafka.ReaderConfig{
+// 		Brokers:   brokers,
+// 		Topic:     user_login,
+// 		Partition: 0,
+// 		// GroupID: "clients",
+// 	})
+// 	reader.SetOffset(0)
+// 	producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
+// 	groupSession := adapter.getPartySessionId(user_login)
+// 	log.Printf("START LISTENING %v\n", user_login)
+// 	admin, _ := kafka.NewAdminClientFromProducer(producer)
+// 	kafka_service.CreateTopic(admin, groupSession, party.PARTY_SIZE) // TODO
+// 	for {
+// 		message, err := reader.ReadMessage(ctx)
+// 		if err != nil {
+// 			log.Printf("!!!!cancel %v, err %v", user_login, err)
+// 			if errors.Is(context.Canceled, err) {
+// 				log.Printf("REALLY CANCEL!!!!")
+// 				return
+// 			} else {
+// 				log.Printf("ERROR OCURED: %v\n", err)
+// 			}
+// 		}
+// 		fmt.Printf("GOT MESSAGE %v: %v\n", message.Key, message.Value)
+// 		for i := 0; i < party.PARTY_SIZE; i++ {
+// 			err = kafka_service.Produce(user_login, string(message.Value), groupSession, int32(i), producer)
+// 			if err != nil {
+// 				log.Printf("GOT ERROR: %v\n", err)
+// 			}
+// 		}
+// 		// select {
+// 		// 	case <-ctx.Done():
+// 		// 		return
+// 		// }
+// 		// log.Printf("After waiting\n")
+// 	}
+// }
 
 func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, req *proto.DefaultRequest) (*proto.ConnectToSessionResponse, error) {
 	success, event := adapter.game.AddPlayer(req.Login)
@@ -82,19 +82,19 @@ func (adapter *ServerAdapter) ConnectToSession(ctx context.Context, req *proto.D
 	if !success {
 		return response, nil
 	}
-	producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
-	admin, _ := kafka.NewAdminClientFromProducer(producer)
-	err := kafka_service.CreateTopic(admin, req.Login, 1)
-	if err != nil {
-		adapter.game.RemovePlayer(req.Login)
-		return &proto.ConnectToSessionResponse{Success: false}, err
-	}
+	// producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
+	// admin, _ := kafka.NewAdminClientFromProducer(producer)
+	// err := kafka_service.CreateTopic(admin, req.Login, 1)
+	// if err != nil {
+	// 	adapter.game.RemovePlayer(req.Login)
+	// 	return &proto.ConnectToSessionResponse{Success: false}, err
+	// }
 
-	newCtx, cancel := context.WithCancel(context.Background())
-	adapter.callbacks_guard.Lock()
-	adapter.user_callbacks[req.Login] = cancel
-	adapter.callbacks_guard.Unlock()
-	go adapter.HandleUserMessages(newCtx, req.Login)
+	// newCtx, cancel := context.WithCancel(context.Background())
+	// adapter.callbacks_guard.Lock()
+	// adapter.user_callbacks[req.Login] = cancel
+	// adapter.callbacks_guard.Unlock()
+	// go adapter.HandleUserMessages(newCtx, req.Login)
 
 	adapter.conn_guard.Lock()
 	defer adapter.conn_guard.Unlock()
@@ -139,20 +139,21 @@ func (adapter *ServerAdapter) LeaveSession(ctx context.Context, request *proto.D
 	}
 	adapter.conn_guard.Unlock()
 
-	adapter.callbacks_guard.Lock()
-	adapter.user_callbacks[request.Login]()
-	adapter.callbacks_guard.Unlock()
+	// adapter.callbacks_guard.Lock()
+	// adapter.user_callbacks[request.Login]()
+	// adapter.callbacks_guard.Unlock()
 
-	adapter.guard.Lock()
-	party := adapter.game.GetMembers(adapter.game.GetParty(request.Login))
-	log.Printf("from %v exit, len %v, party %v\n", request.Login, len(party), party)
-	producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
-	admin, _ := kafka.NewAdminClientFromProducer(producer)
-	kafka_service.DeleteTopic(admin, request.Login)
-	if len(party) == 0 {
-		kafka_service.DeleteTopic(admin, adapter.getPartySessionId(request.Login))
-	}
-	adapter.guard.Unlock()
+	// adapter.guard.Lock()
+	// party := adapter.game.GetMembers(adapter.game.GetParty(request.Login))
+	// log.Printf("from %v exit, len %v, party %v\n", request.Login, len(party), party)
+	// producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
+	// admin, _ := kafka.NewAdminClientFromProducer(producer)
+	// kafka_service.DeleteTopic(admin, request.Login)
+	// if len(party) == 0 {
+	// 	kafka_service.DeleteTopic(admin, adapter.getPartySessionId(request.Login))
+	// }
+	// adapter.guard.Unlock()
+
 	fmt.Printf("Bye %v!\n", request.Login)
 	adapter.CloseChannels(request.Login)
 	return &proto.LeaveSessionResponse{Success: success}, nil
@@ -173,14 +174,14 @@ func (adapter *ServerAdapter) ListConnections(req *proto.DefaultRequest, stream 
 	}
 	if adapter.game.SessionReady(req.Login) {
 		if adapter.game.DistributeRoles(adapter.game.GetParty(req.Login)) {
-			partyId := adapter.getPartySessionId(req.Login)
-			producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
-			admin, _ := kafka.NewAdminClientFromProducer(producer)
-			err := kafka_service.CreateTopic(admin, partyId, party.PARTY_SIZE)
-			if err != nil {
-				adapter.closeConnection(req.Login)
-				return err
-			}
+			// partyId := adapter.getPartySessionId(req.Login)
+			// producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
+			// admin, _ := kafka.NewAdminClientFromProducer(producer)
+			// err := kafka_service.CreateTopic(admin, partyId, party.PARTY_SIZE)
+			// if err != nil {
+			// 	adapter.closeConnection(req.Login)
+			// 	return err
+			// }
 			adapter.SendReadinessNotification(adapter.game.GetMembers(adapter.game.GetParty(req.Login)))
 		}
 	}
@@ -282,21 +283,21 @@ func (adapter *ServerAdapter) GetStatus(ctx context.Context, req *proto.DefaultR
 }
 
 func (adapter *ServerAdapter) ExitGameSession(ctx context.Context, req *proto.DefaultRequest) (*proto.ExitGameSessionResponse, error) {
-	adapter.callbacks_guard.Lock()
-	adapter.user_callbacks[req.Login]()
-	adapter.callbacks_guard.Unlock()
-	partyId := adapter.getPartySessionId(req.Login)
-	producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
-	admin, _ := kafka.NewAdminClientFromProducer(producer)
+	// adapter.callbacks_guard.Lock()
+	// adapter.user_callbacks[req.Login]()
+	// adapter.callbacks_guard.Unlock()
+	// partyId := adapter.getPartySessionId(req.Login)
+	// producer, _ := kafka_service.GetNewProducer(adapter.brokerServers)
+	// admin, _ := kafka.NewAdminClientFromProducer(producer)
 
-	adapter.guard.Lock()
-	defer adapter.guard.Unlock()
-	party := adapter.game.GetMembers(adapter.game.GetParty(req.Login))
-	log.Printf("from %v exit, len %v\n", req.Login, len(party))
-	if len(party) == 1 {
-		// POSHEMUTO NEWER =(
-		kafka_service.DeleteTopic(admin, partyId)
-	}
+	// adapter.guard.Lock()
+	// defer adapter.guard.Unlock()
+	// party := adapter.game.GetMembers(adapter.game.GetParty(req.Login))
+	// log.Printf("from %v exit, len %v\n", req.Login, len(party))
+	// if len(party) == 1 {
+	// 	// POSHEMUTO NEWER =(
+	// 	kafka_service.DeleteTopic(admin, partyId)
+	// }
 	adapter.game.ExitSession(req.Login)
 	return &proto.ExitGameSessionResponse{}, nil
 }

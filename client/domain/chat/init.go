@@ -9,8 +9,8 @@ import (
 )
 
 type ChatService struct {
-	producer      *kafka.Producer
-	admin         *kafka.AdminClient
+	producer      *kafka.Producer // to remove
+	admin         *kafka.AdminClient // to remove
 	brokerServers string
 }
 

@@ -38,12 +38,11 @@ func Produce(key string, value string, topic string, partition int32, producer *
 
 	e := <-deliveryChan
 	m := e.(*kafka.Message)
-
 	if m.TopicPartition.Error != nil {
 		log.Printf("FAILED TO PRODUCE %v\n", err)
 		return m.TopicPartition.Error
 	} else {
-		fmt.Printf("message delivered topic: %s | key: %s| part %v\n", topic, string(key), partition)
+		fmt.Printf("message `%s` delivered topic: %s | key: %s| part %v\n", value, topic, string(key), partition)
 	}
 
 	log.Printf("ALL FINE -___-")

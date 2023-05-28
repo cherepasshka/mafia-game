@@ -4,16 +4,18 @@ services:
   masia-server:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: mafia.Dockerfile
     command: /mafia-game/myapp
     ports: 
       - 9000:9000
     environment:
       KAFKA_BROKER_URL: kafka1:19092
+    stop_signal: SIGINT
+    stop_grace_period: 30s
     depends_on:
       - kafka1
       - zoo1
-  
+
   zoo1:
     image: zookeeper
     restart: always
@@ -47,3 +49,17 @@ services:
     entrypoint: ./kowl --config.filepath=/etc/kowl/config.yaml
     depends_on:
       - kafka1
+
+  chat-server:
+    build:
+      context: .
+      dockerfile: chat.Dockerfile
+    command: /mafia-game/myapp
+    environment:
+      KAFKA_BROKER_URL: kafka1:19092
+    restart: always
+    stop_signal: SIGINT
+    stop_grace_period: 30s
+    depends_on:
+      - kafka1
+      - zoo1

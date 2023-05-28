@@ -49,10 +49,11 @@ func (user *Mafia) MakeNightMove(ctx context.Context, alive_players []string, cl
 func (user *Mafia) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) error {
 	guess := user.Login
 	if user.Status == models.Dead {
+		user.ChatService.Start(user.Login, user.Session, user.Partition, true)
 		fmt.Println("You are dead, so you skip this day vote")
 		guess = "None"
 	} else {
-		user.ChatService.Start(user.Login, user.Session, user.Partition)
+		user.ChatService.Start(user.Login, user.Session, user.Partition, false)
 		for guess == user.Login {
 			guess, _ = console.AskPrompt("Select your mafia guess", alive_players)
 		}
