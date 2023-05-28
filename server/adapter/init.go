@@ -16,10 +16,6 @@ type ServerAdapter struct {
 
 	victims       map[string]chan string
 	moved_players map[int]int
-
-	callbacks_guard sync.Mutex
-	user_callbacks  map[string]func()
-	brokerServers   string
 }
 
 func New(brokerServers string) (*ServerAdapter, error) {
@@ -29,9 +25,5 @@ func New(brokerServers string) (*ServerAdapter, error) {
 
 		victims:       make(map[string]chan string),
 		moved_players: make(map[int]int),
-
-		user_callbacks: make(map[string]func()),
-
-		brokerServers: brokerServers,
 	}, nil
 }
