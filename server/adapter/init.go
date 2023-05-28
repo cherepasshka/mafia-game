@@ -3,8 +3,6 @@ package mafia_server
 import (
 	"sync"
 
-	// "github.com/confluentinc/confluent-kafka-go/kafka"
-	// "soa.mafia-game/kafka-help"
 	proto "soa.mafia-game/proto/mafia-game"
 	mafia_domain "soa.mafia-game/server/domain/mafia-game"
 )
@@ -21,8 +19,7 @@ type ServerAdapter struct {
 
 	callbacks_guard sync.Mutex
 	user_callbacks  map[string]func()
-	// producer *kafka.Producer
-	brokerServers string
+	brokerServers   string
 }
 
 func New(brokerServers string) (*ServerAdapter, error) {

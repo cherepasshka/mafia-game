@@ -12,8 +12,8 @@ import (
 func GetNewProducer(brokerServers string) (*kafka.Producer, error) {
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers": brokerServers, //"kafka1:9092",
-		//"client.id":         "prod-1TODO",
-		"acks": "all",
+		"client.id":         "clients",
+		"acks":              "all",
 	})
 	log.Printf("After creating producer with brokers %v\n", brokerServers)
 	return producer, err
@@ -22,7 +22,6 @@ func GetNewProducer(brokerServers string) (*kafka.Producer, error) {
 func Produce(key string, value string, topic string, partition int32, producer *kafka.Producer) error {
 	deliveryChan := make(chan kafka.Event, 1)
 	defer close(deliveryChan)
-
 	err := producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{
 			Topic:     &topic,
@@ -52,6 +51,7 @@ func Produce(key string, value string, topic string, partition int32, producer *
 }
 
 func CreateTopic(admin *kafka.AdminClient, topicName string, numPartitions int) error {
+	log.Printf("CREATE TOPIC %v", topicName)
 	topic := kafka.TopicSpecification{
 		Topic:         topicName,
 		NumPartitions: numPartitions,

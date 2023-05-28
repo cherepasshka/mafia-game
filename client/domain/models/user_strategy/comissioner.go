@@ -3,33 +3,31 @@ package user_strategy
 import (
 	"context"
 	"fmt"
-	"math/rand"
-	// "time"
 
+	"soa.mafia-game/client/domain/chat"
 	"soa.mafia-game/client/domain/models/user"
+	"soa.mafia-game/client/internal/utils/console"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
 type Commissioner struct {
 	models.BaseUser
-	lastGuess string
+	lastGuess   string
+	ChatService *chat.ChatService
 }
 
 func (user *Commissioner) GetRole() proto.Roles {
 	return proto.Roles_Commissioner
 }
 
-func (user *Commissioner) MakeNightMove(ctx context.Context, players []string, client proto.MafiaServiceClient) error {
-	// ctx, cancel := context.WithTimeout(ctx, time.Duration(time.Second))
-	// defer cancel()
-	// SetRandom()
+func (user *Commissioner) MakeNightMove(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) error {
 	if user.Status == models.Dead {
 		fmt.Println("You are dead, so you skip this night")
 		return nil
 	}
 	suspected := user.Login
 	for suspected == user.Login {
-		suspected = players[rand.Intn(len(players))]
+		suspected, _ = console.AskPrompt("Select suspect", alive_players)
 	}
 	response, err := client.MakeMove(ctx, &proto.MoveRequest{Login: user.Login, Target: suspected})
 	if err != nil {
@@ -46,19 +44,14 @@ func (user *Commissioner) MakeNightMove(ctx context.Context, players []string, c
 }
 
 func (user *Commissioner) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) error {
-
-	// SetRandom()
 	guess := user.Login
 	if user.Status == models.Dead {
 		fmt.Println("You are dead, so you skip this day vote")
 		guess = "None"
 	} else {
-		if user.lastGuess == "" {
-			for guess == user.Login {
-				guess = alive_players[rand.Intn(len(alive_players))]
-			}
-		} else {
-			guess = user.lastGuess
+		user.ChatService.Start(user.Login, user.Session, user.Partition)
+		for guess == user.Login {
+			guess, _ = console.AskPrompt("Select your mafia guess", alive_players)
 		}
 		fmt.Printf("You voted for %s\n", guess)
 	}

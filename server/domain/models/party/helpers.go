@@ -62,6 +62,7 @@ func (d *PartiesDistribution) GetParty(party int) []string {
 			ind++
 		}
 	}
+	result = result[:ind]
 	sort.Slice(result, func(i, j int) bool { return result[i] < result[j] })
 	return result
 }

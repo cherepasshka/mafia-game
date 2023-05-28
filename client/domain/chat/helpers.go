@@ -3,12 +3,9 @@ package chat
 import (
 	"context"
 	"errors"
-	// "fmt"
 	"log"
 	"strings"
 
-	// "time"
-	// "github.com/mgutz/ansi"
 	"github.com/fatih/color"
 	"github.com/segmentio/kafka-go"
 
@@ -41,14 +38,10 @@ func (service *ChatService) Listen(ctx context.Context, sessionId string, partit
 		Brokers:   brokers,
 		Topic:     sessionId,
 		Partition: int(partition),
-		// MinBytes:  10e3, // 10KB
-		// MaxBytes:  10e6, // 10MB
-		// MaxWait:   time.Millisecond * 10,
 	})
 	reader.SetOffset(0)
 
 	for {
-
 		message, err := reader.ReadMessage(ctx)
 		if err != nil {
 			if errors.Is(context.Canceled, err) {
@@ -57,10 +50,6 @@ func (service *ChatService) Listen(ctx context.Context, sessionId string, partit
 				log.Printf("%v\n", err)
 			}
 		}
-		color.Black("%v says %v\n", string(message.Key), string(message.Value))
-		// select {
-		// 	case <-ctx.Done():
-		// 		return
-		// }
+		color.Black("%v says %v", string(message.Key), string(message.Value))
 	}
 }
