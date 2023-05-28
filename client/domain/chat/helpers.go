@@ -51,9 +51,6 @@ func (service *ChatService) Listen(ctx context.Context, sessionId string, partit
 		admin.Close()
 	}()
 	_ = admin.CreateTopic(sessionId, &sarama.TopicDetail{NumPartitions: 4, ReplicationFactor: 1}, false)
-	// if err != nil && !errors.Is(sarama.ErrTopicAlreadyExists, err) {
-	//     log.Fatalf("Failed to open chat: %v; %v", err, errors.Is(sarama.ErrTopicAlreadyExists, err))
-	// }
 
 	brokers := strings.Split(service.brokerServers, ",")
 	reader := kafka.NewReader(kafka.ReaderConfig{

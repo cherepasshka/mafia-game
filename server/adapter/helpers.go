@@ -3,7 +3,7 @@ package mafia_server
 import (
 	"context"
 	"fmt"
-	
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	proto "soa.mafia-game/proto/mafia-game"

@@ -1,7 +1,7 @@
 version: "2"
 
 services:
-  masia-server:
+  mafia-server:
     build:
       context: .
       dockerfile: mafia.Dockerfile
