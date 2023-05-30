@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"soa.mafia-game/game-server/domain/models/party"
+	"soa.mafia-game/game-server/domain/models/user"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
@@ -17,7 +18,7 @@ type Event struct {
 
 type MafiaGame struct {
 	distribution party.PartiesDistribution
-	users        []string
+	users        map[string]user.User
 	is_alive     map[string]bool
 
 	guard        sync.Mutex

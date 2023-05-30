@@ -4,37 +4,34 @@ import (
 	"time"
 
 	party_model "soa.mafia-game/game-server/domain/models/party"
+	"soa.mafia-game/game-server/domain/models/user"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
 func (game *MafiaGame) AddPlayer(login string) (bool, Event) {
-	for _, user_login := range game.users {
-		if user_login == login {
-			return false, Event{}
-		}
-	}
 	game.guard.Lock()
 	defer game.guard.Unlock()
-	game.users = append(game.users, login)
+	_, exists := game.users[login]
+	if exists {
+		return false, Event{}
+
+	}
+	game.users[login] = user.User{
+		Login: login,
+	}
 
 	game.Events = append(game.Events, Event{User: login, Status: proto.State_connected, Time: time.Now()})
 	return true, game.Events[len(game.Events)-1]
 }
 
 func (game *MafiaGame) RemovePlayer(login string) (bool, Event) {
-	user_id := -1
-	for i, user_login := range game.users {
-		if user_login == login {
-			user_id = i
-		}
-	}
-	if user_id == -1 {
-		return false, Event{}
-	}
 	game.guard.Lock()
 	defer game.guard.Unlock()
-	game.users[user_id] = game.users[len(game.users)-1]
-	game.users = game.users[:len(game.users)-1] // delete user
+	_, exists := game.users[login]
+	if !exists {
+		return false, Event{}
+	}
+	delete(game.users, login)
 
 	game.distribution.RemovePlayer(login)
 
