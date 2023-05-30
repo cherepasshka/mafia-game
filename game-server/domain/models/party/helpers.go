@@ -11,8 +11,6 @@ import (
 func (d *PartiesDistribution) AddPlayer(user_login string) {
 	d.party_mutex.Lock()
 	defer d.party_mutex.Unlock()
-	// id := len(d.non_full_party_ids) - 1
-	// party := d.current_party
 	if d.party_size[d.current_party] == PARTY_SIZE {
 		d.current_party++
 	}

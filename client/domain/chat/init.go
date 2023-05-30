@@ -6,7 +6,7 @@ type ChatService struct {
 
 func New(brokerServers string) (*ChatService, error) {
 	service := &ChatService{
-		brokerServers: brokerServers, // HERE SINGLE
+		brokerServers: brokerServers,
 	}
 	return service, nil
 }

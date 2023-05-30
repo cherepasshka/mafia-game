@@ -20,8 +20,7 @@ func New() (*MafiaApplication, error) {
 	app := &MafiaApplication{
 		mafia_server: grpc.NewServer(),
 	}
-	brokerServers := os.Getenv("KAFKA_BROKER_URL") // TODO: os.env
-	log.Printf("CONNECT TO KAFKA %v\n", brokerServers)
+	brokerServers := os.Getenv("KAFKA_BROKER_URL")
 	server, err := mafia_server.New(brokerServers)
 	if err != nil {
 		return nil, err

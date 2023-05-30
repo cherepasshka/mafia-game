@@ -13,7 +13,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/segmentio/kafka-go"
 
-	// "soa.mafia-game/client/internal/utils/console"
 	kafka_service "soa.mafia-game/kafka-help"
 )
 
