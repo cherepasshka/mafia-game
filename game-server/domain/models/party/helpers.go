@@ -11,14 +11,13 @@ import (
 func (d *PartiesDistribution) AddPlayer(user_login string) {
 	d.party_mutex.Lock()
 	defer d.party_mutex.Unlock()
-	id := len(d.non_full_party_ids) - 1
-	party := d.non_full_party_ids[id]
-	d.party[user_login] = party
-	d.party_size[party]++
-	if d.party_size[party] == PARTY_SIZE {
-		d.non_full_party_ids[id] = d.party_set
-		d.party_set++
+	// id := len(d.non_full_party_ids) - 1
+	// party := d.current_party
+	if d.party_size[d.current_party] == PARTY_SIZE {
+		d.current_party++
 	}
+	d.party[user_login] = d.current_party
+	d.party_size[d.current_party]++
 }
 
 func (d *PartiesDistribution) RemovePlayer(user_login string) {
@@ -27,9 +26,6 @@ func (d *PartiesDistribution) RemovePlayer(user_login string) {
 	party, ok := d.party[user_login]
 	if !ok {
 		return
-	}
-	if d.party_size[party] == PARTY_SIZE {
-		d.non_full_party_ids = append(d.non_full_party_ids, party)
 	}
 	d.party_size[party]--
 	delete(d.party, user_login)
