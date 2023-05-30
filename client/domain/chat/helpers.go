@@ -1,16 +1,19 @@
 package chat
 
 import (
+	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/Shopify/sarama"
 	"github.com/fatih/color"
 	"github.com/segmentio/kafka-go"
 
-	"soa.mafia-game/client/internal/utils/console"
+	// "soa.mafia-game/client/internal/utils/console"
 	kafka_service "soa.mafia-game/kafka-help"
 )
 
@@ -24,11 +27,12 @@ func (service *ChatService) Start(user_login, sessionId string, partition int32,
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go service.Listen(ctx, sessionId, partition)
+	go service.Listen(ctx, user_login, sessionId, partition)
 
 	color.Black("To stop messaging type `exit`")
 	for {
-		msg, err := console.Ask(">")
+		line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		msg := line[:len(line)-1]
 		if err != nil {
 			log.Printf("%v\n", err)
 			continue
@@ -40,7 +44,7 @@ func (service *ChatService) Start(user_login, sessionId string, partition int32,
 	}
 }
 
-func (service *ChatService) Listen(ctx context.Context, sessionId string, partition int32) {
+func (service *ChatService) Listen(ctx context.Context, user_login, sessionId string, partition int32) {
 	config := sarama.NewConfig()
 
 	admin, err := sarama.NewClusterAdmin([]string{"localhost:9092"}, config)
@@ -61,6 +65,8 @@ func (service *ChatService) Listen(ctx context.Context, sessionId string, partit
 	defer reader.Close()
 	reader.SetOffset(0)
 
+	number := make(map[string]int)
+	ind := 0
 	for {
 		message, err := reader.ReadMessage(ctx)
 		if err != nil {
@@ -70,6 +76,26 @@ func (service *ChatService) Listen(ctx context.Context, sessionId string, partit
 				log.Printf("%v\n", err)
 			}
 		}
-		color.Black("%v says %v", string(message.Key), string(message.Value))
+		user := string(message.Key)
+		if _, exists := number[user]; !exists {
+			number[user] = ind
+			ind++
+		}
+		if user != user_login {
+			colorfulPrint(fmt.Sprintf("%v: %v", user, string(message.Value)), number[user])
+			// color.Black("%v says %v", , string(message.Value))
+		}
+	}
+}
+
+func colorfulPrint(value string, number int) {
+	if number == 0 {
+		color.Blue(value)
+	} else if number == 1 {
+		color.Green(value)
+	} else if number == 2 {
+		color.Red(value)
+	} else {
+		color.Magenta(value)
 	}
 }

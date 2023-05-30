@@ -116,6 +116,12 @@ func process() {
 			_, exist := workers[topic]
 			if len(topic) >= len(chat_prefix) && topic[:len(chat_prefix)] == chat_prefix {
 				chats[topic] = true
+				if topics[topic].NumPartitions != 4 {
+					err = admin.CreatePartitions(topic, 4, make([][]int32, 0), false)
+					if err != nil {
+						log.Printf("Failed to create partitions: %v", err)
+					}
+				}
 				continue
 			}
 			if !exist {

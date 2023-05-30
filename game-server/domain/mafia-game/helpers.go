@@ -3,8 +3,8 @@ package mafia_domain
 import (
 	"time"
 
-	proto "soa.mafia-game/proto/mafia-game"
 	party_model "soa.mafia-game/game-server/domain/models/party"
+	proto "soa.mafia-game/proto/mafia-game"
 )
 
 func (game *MafiaGame) AddPlayer(login string) (bool, Event) {

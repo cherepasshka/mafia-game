@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	// kafka_service "soa.mafia-game/kafka-help"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
@@ -21,6 +22,7 @@ type User interface {
 	SetStatus(LiveStatus)
 	MakeNightMove(context.Context, []string, proto.MafiaServiceClient) error
 	VoteForMafia(context.Context, []string, proto.MafiaServiceClient) error
+	// Stop()
 }
 
 type BaseUser struct {
@@ -45,6 +47,12 @@ func (user *BaseUser) GetStatus() LiveStatus {
 func (user *BaseUser) SetStatus(status LiveStatus) {
 	user.Status = status
 }
+
+// func (user *BaseUser) Stop() {
+// 	producer, _ := kafka_service.GetNewProducer("localhost:9092")
+// 	defer producer.Close()
+// 	kafka_service.Produce(user.Session, "exit", user.Login, 0, producer)
+// }
 
 func (user *BaseUser) MakeNightMove(context.Context, []string, proto.MafiaServiceClient) error {
 	return fmt.Errorf("not implemented")

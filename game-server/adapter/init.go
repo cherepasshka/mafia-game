@@ -3,8 +3,8 @@ package mafia_server
 import (
 	"sync"
 
-	proto "soa.mafia-game/proto/mafia-game"
 	mafia_domain "soa.mafia-game/game-server/domain/mafia-game"
+	proto "soa.mafia-game/proto/mafia-game"
 )
 
 type ServerAdapter struct {

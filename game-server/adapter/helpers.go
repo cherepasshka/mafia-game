@@ -6,8 +6,8 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	proto "soa.mafia-game/proto/mafia-game"
 	mafia_domain "soa.mafia-game/game-server/domain/mafia-game"
+	proto "soa.mafia-game/proto/mafia-game"
 )
 
 func (adapter *ServerAdapter) SendReadinessNotification(members []string) {
@@ -199,6 +199,5 @@ func (adapter *ServerAdapter) GetStatus(ctx context.Context, req *proto.DefaultR
 }
 
 func (adapter *ServerAdapter) ExitGameSession(ctx context.Context, req *proto.DefaultRequest) (*proto.ExitGameSessionResponse, error) {
-	adapter.game.ExitSession(req.Login)
 	return &proto.ExitGameSessionResponse{}, nil
 }

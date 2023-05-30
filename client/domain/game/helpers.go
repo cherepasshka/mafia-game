@@ -59,3 +59,7 @@ func (game *Game) Start(ctx context.Context, grpcClient *domain_client.Client) e
 	fmt.Print("Game over\n")
 	return nil
 }
+
+// func (game *Game) Stop() {
+// 	// game.player.Stop()
+// }

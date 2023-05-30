@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	proto "soa.mafia-game/proto/mafia-game"
 	"soa.mafia-game/game-server/domain/models/party"
+	proto "soa.mafia-game/proto/mafia-game"
 )
 
 type Event struct {
