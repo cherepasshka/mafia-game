@@ -16,11 +16,9 @@ protoc --go_out=. proto/mafia-game.proto --go-grpc_out=.
 
 Запуск с помощью `docker-compose`:
 ```bash
-docker-compose up
+docker-compose build && docker-compose up
 ```
-Запуск без контейнера:
-```bash
-go run server/cmd/main.go
+Кафка довольно долго поднимается (около 2-3 минут), поэтому нужно подождать перед тем, как запускать клиента.
 ```
 ### 2. Запуск клиента
 Можно указать флаг для порта `--port 9000` и для хоста `--host 127.0.0.1`
