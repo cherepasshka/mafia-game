@@ -2,9 +2,7 @@ version: "2"
 
 services:
   mafia-server:
-    build:
-      context: .
-      dockerfile: mafia.Dockerfile
+    image: cherepashka/soa-practice-3:game-server
     command: /mafia-game/myapp
     ports: 
       - 9000:9000
@@ -51,9 +49,7 @@ services:
       - kafka1
 
   chat-server:
-    build:
-      context: .
-      dockerfile: chat.Dockerfile
+    image: cherepashka/soa-practice-3:chat-server
     command: /mafia-game/myapp
     environment:
       KAFKA_BROKER_URL: kafka1:19092
