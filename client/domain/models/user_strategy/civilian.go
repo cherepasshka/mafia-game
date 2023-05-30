@@ -11,7 +11,7 @@ import (
 )
 
 type Civilian struct {
-	models.BaseUser
+	models.CommunicatorUser
 	ChatService *chat.ChatService
 }
 
@@ -28,7 +28,9 @@ func (user *Civilian) MakeNightMove(ctx context.Context, alive []string, client 
 
 func (user *Civilian) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) error {
 	guess := user.Login
+	user.ExitedChat = false
 	user.ChatService.Start(user.Login, user.Session, user.Partition, user.Status == models.Dead)
+	user.ExitedChat = true
 	if user.Status == models.Dead {
 		fmt.Println("You are dead, so you skip this day vote")
 		guess = "None"

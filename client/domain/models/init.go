@@ -10,28 +10,31 @@ import (
 )
 
 func MakeUser(login string, role proto.Roles, session string, partition int32) models.User {
-	base := models.BaseUser{
-		Status:    models.Alive,
-		Login:     login,
-		Session:   session,
-		Partition: partition,
+	base := models.CommunicatorUser{
+		BaseUser: models.BaseUser{
+			Status:    models.Alive,
+			Login:     login,
+			Session:   session,
+			Partition: partition,
+		},
+		ExitedChat: true,
 	}
 	chatService, _ := chat.New("localhost:9092")
 	fmt.Printf("After chat.New\n")
 	if role == proto.Roles_Civilian {
 		return &user_strategy.Civilian{
-			BaseUser:    base,
-			ChatService: chatService,
+			CommunicatorUser: base,
+			ChatService:      chatService,
 		}
 	} else if role == proto.Roles_Mafia {
 		return &user_strategy.Mafia{
-			BaseUser:    base,
-			ChatService: chatService,
+			CommunicatorUser: base,
+			ChatService:      chatService,
 		}
 	} else if role == proto.Roles_Commissioner {
 		return &user_strategy.Commissioner{
-			BaseUser:    base,
-			ChatService: chatService,
+			CommunicatorUser: base,
+			ChatService:      chatService,
 		}
 	}
 	return &base
