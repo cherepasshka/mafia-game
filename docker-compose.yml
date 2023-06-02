@@ -2,12 +2,16 @@ version: "2"
 
 services:
   mafia-server:
-    image: cherepashka/soa-practice-3:game-server
+    build:
+      context: .
+      dockerfile: mafia.Dockerfile
     command: /mafia-game/myapp
     ports: 
       - 9000:9000
     environment:
       KAFKA_BROKER_URL: kafka1:19092
+      MAFIA_GAME_ADDRESS: :9000
+      HTTP_ADDRESS: :9001
     stop_signal: SIGINT
     stop_grace_period: 30s
     depends_on:
@@ -15,7 +19,10 @@ services:
       - zoo1
 
   chat-server:
-    image: cherepashka/soa-practice-3:chat-server
+    
+    build:
+      context: .
+      dockerfile: chat.Dockerfile
     command: /mafia-game/myapp
     environment:
       KAFKA_BROKER_URL: kafka1:19092
