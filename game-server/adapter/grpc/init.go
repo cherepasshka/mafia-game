@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	mafia_domain "soa.mafia-game/game-server/domain/mafia-game"
+	usersdb "soa.mafia-game/game-server/domain/models/users_db"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
@@ -18,9 +19,9 @@ type ServerAdapter struct {
 	moved_players map[int]int
 }
 
-func New(brokerServers string) (*ServerAdapter, error) {
+func New(users *usersdb.UsersStorage, brokerServers string) (*ServerAdapter, error) {
 	return &ServerAdapter{
-		game:        mafia_domain.NewGame(),
+		game:        mafia_domain.NewGame(users),
 		connections: make(map[string]chan mafia_domain.Event),
 
 		victims:       make(map[string]chan string),

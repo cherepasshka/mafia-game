@@ -7,6 +7,7 @@ require (
 	github.com/Shopify/sarama v1.38.1
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/fatih/color v1.15.0
+	github.com/go-chi/chi v1.5.4
 	github.com/golang/protobuf v1.5.2
 	github.com/segmentio/kafka-go v0.4.40
 	github.com/spf13/pflag v1.0.5

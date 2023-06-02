@@ -2,13 +2,13 @@ package mafia_domain
 
 import (
 	"soa.mafia-game/game-server/domain/models/party"
-	"soa.mafia-game/game-server/domain/models/user"
+	usersdb "soa.mafia-game/game-server/domain/models/users_db"
 )
 
-func NewGame() *MafiaGame {
+func NewGame(users *usersdb.UsersStorage) *MafiaGame {
 	game := &MafiaGame{
 		distribution: party.New(),
-		users:        make(map[string]user.User),
+		users:        users,
 		is_alive:     make(map[string]bool),
 
 		votes_cnt:    make(map[int]map[string]int),

@@ -11,14 +11,14 @@ import (
 func (game *MafiaGame) AddPlayer(login string) (bool, Event) {
 	game.guard.Lock()
 	defer game.guard.Unlock()
-	_, exists := game.users[login]
+	_, exists := game.users.Get(login)
 	if exists {
 		return false, Event{}
 
 	}
-	game.users[login] = user.User{
+	game.users.Set(login, user.User{
 		Login: login,
-	}
+	})
 
 	game.Events = append(game.Events, Event{User: login, Status: proto.State_connected, Time: time.Now()})
 	return true, game.Events[len(game.Events)-1]
@@ -27,11 +27,11 @@ func (game *MafiaGame) AddPlayer(login string) (bool, Event) {
 func (game *MafiaGame) RemovePlayer(login string) (bool, Event) {
 	game.guard.Lock()
 	defer game.guard.Unlock()
-	_, exists := game.users[login]
+	_, exists := game.users.Get(login)
 	if !exists {
 		return false, Event{}
 	}
-	delete(game.users, login)
+	game.users.Delete(login)
 
 	game.distribution.RemovePlayer(login)
 
