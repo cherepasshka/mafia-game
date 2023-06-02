@@ -90,4 +90,24 @@ func (d *PartiesDistribution) GetRole(user string) proto.Roles {
 	return d.roles[user]
 }
 
+func (d *PartiesDistribution) ChangeLogin(old_login, new_login string) {
+	d.party_mutex.Lock()
+	defer d.party_mutex.Unlock()
+	d.roles_mutex.Lock()
+	defer d.roles_mutex.Unlock()
+
+	party, exists := d.party[old_login]
+	if !exists {
+		return
+	}
+	delete(d.party, old_login)
+	d.party[new_login] = party
+	role, exists := d.roles[old_login]
+	if !exists {
+		return
+	}
+	delete(d.roles, old_login)
+	d.roles[new_login] = role
+}
+
 // to change somehow info about user

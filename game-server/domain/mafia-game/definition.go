@@ -4,8 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"soa.mafia-game/game-server/domain/models/party"
-	usersdb "soa.mafia-game/game-server/domain/models/users_db"
+	usersdb "soa.mafia-game/game-server/domain/models/storage"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
@@ -17,9 +16,8 @@ type Event struct {
 }
 
 type MafiaGame struct {
-	distribution party.PartiesDistribution
-	users        *usersdb.UsersStorage
-	is_alive     map[string]bool
+	storage  *usersdb.Storage
+	is_alive map[string]bool
 
 	guard        sync.Mutex
 	ghost        map[string]chan string

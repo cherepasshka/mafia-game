@@ -11,12 +11,12 @@ import (
 func (game *MafiaGame) AddPlayer(login string) (bool, Event) {
 	game.guard.Lock()
 	defer game.guard.Unlock()
-	_, exists := game.users.Get(login)
+	_, exists := game.storage.GetUser(login)
 	if exists {
 		return false, Event{}
 
 	}
-	game.users.Set(login, user.User{
+	game.storage.SetUser(login, user.User{
 		Login: login,
 	})
 
@@ -27,28 +27,28 @@ func (game *MafiaGame) AddPlayer(login string) (bool, Event) {
 func (game *MafiaGame) RemovePlayer(login string) (bool, Event) {
 	game.guard.Lock()
 	defer game.guard.Unlock()
-	_, exists := game.users.Get(login)
+	_, exists := game.storage.GetUser(login)
 	if !exists {
 		return false, Event{}
 	}
-	game.users.Delete(login)
+	game.storage.DeleteUser(login)
 
-	game.distribution.RemovePlayer(login)
+	game.storage.RemovePlayer(login)
 
 	game.Events = append(game.Events, Event{User: login, Status: proto.State_left, Time: time.Now()})
 	return true, game.Events[len(game.Events)-1]
 }
 
 func (game *MafiaGame) SessionReady(user string) bool {
-	return game.distribution.IsFull(game.distribution.GetUserParty(user))
+	return game.storage.IsFull(game.storage.GetUserParty(user))
 }
 
 func (game *MafiaGame) GetParty(user string) int {
-	return game.distribution.GetUserParty(user)
+	return game.storage.GetUserParty(user)
 }
 
 func (game *MafiaGame) GetPartition(user string) int {
-	members := game.distribution.GetParty(game.GetParty(user))
+	members := game.storage.GetParty(game.GetParty(user))
 	for i := range members {
 		if members[i] == user {
 			return i
@@ -58,7 +58,7 @@ func (game *MafiaGame) GetPartition(user string) int {
 }
 
 func (game *MafiaGame) GetRole(user string) proto.Roles {
-	return game.distribution.GetRole(user)
+	return game.storage.GetRole(user)
 }
 
 func (game *MafiaGame) DistributeRoles(party int) bool {
@@ -68,7 +68,7 @@ func (game *MafiaGame) DistributeRoles(party int) bool {
 	for _, member := range members {
 		game.is_alive[member] = true
 	}
-	return game.distribution.DistributeRoles(party)
+	return game.storage.DistributeRoles(party)
 }
 
 func (game *MafiaGame) IsPlayerAlive(login string) bool {
@@ -93,7 +93,7 @@ func (game *MafiaGame) GetAliveMembers(party int) []string {
 }
 
 func (game *MafiaGame) GetMembers(party int) []string {
-	return game.distribution.GetParty(party)
+	return game.storage.GetParty(party)
 }
 
 func (game *MafiaGame) CountRole(party int, role proto.Roles) int {
@@ -168,11 +168,11 @@ func (game *MafiaGame) WaitForEverybody(user_login string) string {
 func (game *MafiaGame) ExitSession(user_login string) {
 	game.guard.Lock()
 	defer game.guard.Unlock()
-	game.distribution.RemovePlayer(user_login)
+	game.storage.RemovePlayer(user_login)
 }
 
 func (game *MafiaGame) EnterSession(user_login string) {
 	game.guard.Lock()
 	defer game.guard.Unlock()
-	game.distribution.AddPlayer(user_login)
+	game.storage.AddPlayer(user_login)
 }

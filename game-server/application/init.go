@@ -11,14 +11,14 @@ import (
 
 	mafia_server "soa.mafia-game/game-server/adapter/grpc"
 	http_mafia "soa.mafia-game/game-server/adapter/http"
-	usersdb "soa.mafia-game/game-server/domain/models/users_db"
+	usersdb "soa.mafia-game/game-server/domain/models/storage"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
 type MafiaApplication struct {
 	mafia_server *grpc.Server
 	http_mafia   *http_mafia.HttpHandler
-	users        *usersdb.UsersStorage
+	users        *usersdb.Storage
 	http_server  *http.Server
 }
 

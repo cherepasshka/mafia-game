@@ -5,14 +5,14 @@ import (
 
 	"github.com/go-chi/chi"
 
-	usersdb "soa.mafia-game/game-server/domain/models/users_db"
+	usersdb "soa.mafia-game/game-server/domain/models/storage"
 )
 
 type HttpHandler struct {
-	users *usersdb.UsersStorage
+	users *usersdb.Storage
 }
 
-func New(users *usersdb.UsersStorage) *HttpHandler {
+func New(users *usersdb.Storage) *HttpHandler {
 	return &HttpHandler{
 		users: users,
 	}
@@ -20,9 +20,10 @@ func New(users *usersdb.UsersStorage) *HttpHandler {
 
 func (handler *HttpHandler) AddHandlers(router *chi.Mux) {
 	router.Route("/users/{login}", func(r chi.Router) {
-		// r.Post("/", handler.GetUser)
+		r.Post("/", handler.CreateUser)
 		r.Get("/", handler.GetUser)
-		// r.Put("/", UpdateUser)
-		// r.Delete("/", DeleteUser)
+		r.Put("/", handler.UpdateUser)
+		r.Delete("/", handler.DeleteUser)
 	})
+	router.HandleFunc("/users/", handler.GetUsers)
 }
