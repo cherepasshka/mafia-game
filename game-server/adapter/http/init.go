@@ -19,7 +19,7 @@ func New(users *usersdb.UsersStorage) *HttpHandler {
 }
 
 func (handler *HttpHandler) AddHandlers(router *chi.Mux) {
-	router.Route("/users/{id}", func(r chi.Router) {
+	router.Route("/users/{login}", func(r chi.Router) {
 		// r.Post("/", handler.GetUser)
 		r.Get("/", handler.GetUser)
 		// r.Put("/", UpdateUser)

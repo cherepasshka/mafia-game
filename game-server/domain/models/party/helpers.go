@@ -89,3 +89,5 @@ func (d *PartiesDistribution) GetRole(user string) proto.Roles {
 	defer d.roles_mutex.Unlock()
 	return d.roles[user]
 }
+
+// to change somehow info about user

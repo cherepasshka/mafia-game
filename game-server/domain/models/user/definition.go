@@ -1,16 +1,16 @@
 package user
 
-type GenderType int
+type GenderType string
 
 const (
-	Undefined GenderType = 0
-	Male      GenderType = 1
-	Female    GenderType = 2
+	Undefined GenderType = "undefined"
+	Male      GenderType = "male"
+	Female    GenderType = "female"
 )
 
 type User struct {
-	Login  string
-	Emain  string
-	Gender GenderType
+	Login  string     `json:"login"`
+	Emain  string     `json:"email"`
+	Gender GenderType `json:"gender"`
 	// TODO IMAGE
 }
