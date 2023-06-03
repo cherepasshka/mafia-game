@@ -13,6 +13,7 @@ services:
       KAFKA_BROKER_URL: kafka1:19092
       MAFIA_GAME_ADDRESS: :9000
       HTTP_ADDRESS: :9001
+      MAX_WORKERS: 2
     stop_signal: SIGINT
     stop_grace_period: 30s
     depends_on:

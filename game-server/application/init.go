@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/go-chi/chi"
 	"google.golang.org/grpc"
@@ -12,6 +13,7 @@ import (
 	mafia_server "soa.mafia-game/game-server/adapter/grpc"
 	http_mafia "soa.mafia-game/game-server/adapter/http"
 	usersdb "soa.mafia-game/game-server/domain/storage"
+	threadpool "soa.mafia-game/game-server/internal/thread_pool"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
@@ -20,6 +22,7 @@ type MafiaApplication struct {
 	http_mafia   *http_mafia.HttpHandler
 	users        *usersdb.Storage
 	http_server  *http.Server
+	pool *threadpool.ThreadPool
 }
 
 func New() (*MafiaApplication, error) {
@@ -38,6 +41,12 @@ func New() (*MafiaApplication, error) {
 }
 
 func (app *MafiaApplication) Start() {
+	maxWorkers, err := strconv.Atoi(os.Getenv("MAX_WORKERS"))
+	if err != nil {
+		log.Fatalf("Failed to init thread pool: %v", err)
+	}
+	app.pool = threadpool.New(maxWorkers)
+
 	http_address := os.Getenv("HTTP_ADDRESS")
 	router := chi.NewRouter()
 	app.http_server = &http.Server{
@@ -65,5 +74,10 @@ func (app *MafiaApplication) Start() {
 }
 
 func (app *MafiaApplication) Stop() {
-	app.mafia_server.Stop()
+	if app.pool != nil {
+		app.pool.Wait()
+	}
+	if app.mafia_server != nil {
+		app.mafia_server.Stop()
+	}
 }

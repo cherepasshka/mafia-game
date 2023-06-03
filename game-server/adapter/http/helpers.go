@@ -13,6 +13,7 @@ import (
 
 	"soa.mafia-game/game-server/domain/models/user"
 	"soa.mafia-game/game-server/internal/pdf"
+	threadpool "soa.mafia-game/game-server/internal/thread_pool"
 )
 
 func GetPdf(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +54,8 @@ func (handler *HttpHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "PDF document with user information: %s\n", url)
 
 	// todo: transfer into queue
-	go func() {
+	pool := threadpool.GetThreadPool()
+	pool.AddTask(func() {
 		pdf, err := pdf.WriteUser(nil, user)
 		if err != nil {
 			return
@@ -63,7 +65,7 @@ func (handler *HttpHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Failed to write user %v", err)
 			return
 		}
-	}()
+	})
 }
 
 // PUT /users/{login}
@@ -168,7 +170,8 @@ func (handler *HttpHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	// todo: transfer into queue
-	go func() {
+	pool := threadpool.GetThreadPool()
+	pool.AddTask(func() {
 		var pdfdoc *gofpdf.Fpdf = nil
 		var err error
 		for i := range logins {
@@ -186,5 +189,5 @@ func (handler *HttpHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-	}()
+	})
 }
