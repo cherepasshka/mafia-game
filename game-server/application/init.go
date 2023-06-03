@@ -11,7 +11,7 @@ import (
 
 	mafia_server "soa.mafia-game/game-server/adapter/grpc"
 	http_mafia "soa.mafia-game/game-server/adapter/http"
-	usersdb "soa.mafia-game/game-server/domain/models/storage"
+	usersdb "soa.mafia-game/game-server/domain/storage"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 

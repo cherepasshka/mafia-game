@@ -3,7 +3,7 @@ package http_mafia
 import (
 	"github.com/go-chi/chi"
 
-	usersdb "soa.mafia-game/game-server/domain/models/storage"
+	usersdb "soa.mafia-game/game-server/domain/storage"
 )
 
 type HttpHandler struct {

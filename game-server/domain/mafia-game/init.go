@@ -1,7 +1,7 @@
 package mafia_domain
 
 import (
-	usersdb "soa.mafia-game/game-server/domain/models/storage"
+	usersdb "soa.mafia-game/game-server/domain/storage"
 )
 
 func NewGame(storage *usersdb.Storage) *MafiaGame {

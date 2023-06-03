@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	usersdb "soa.mafia-game/game-server/domain/models/storage"
+	usersdb "soa.mafia-game/game-server/domain/storage"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
