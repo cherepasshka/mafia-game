@@ -39,7 +39,7 @@ func (handler *HttpHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(user)
+	jsonData, err := json.Marshal(user.Profile)
 	if err != nil {
 		w.WriteHeader(http.StatusBadGateway)
 		return
@@ -52,6 +52,7 @@ func (handler *HttpHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	url := fmt.Sprintf("http://%s/pdf/%s.pdf", r.Host, login)
 	fmt.Fprintf(w, "PDF document with user information: %s\n", url)
 
+	// todo: transfer into queue
 	go func() {
 		pdf, err := pdf.WriteUser(nil, user)
 		if err != nil {
@@ -73,19 +74,21 @@ func (handler *HttpHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	new_user := user.User{}
+	new_profile := user.Profile{}
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err = json.Unmarshal(data, &new_user); err != nil {
+	if err = json.Unmarshal(data, &new_profile); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if old_user.Login != new_user.Login {
-		handler.users.ChangeLogin(old_user.Login, new_user.Login)
+	if old_user.Login != new_profile.Login {
+		handler.users.ChangeLogin(old_user.Login, new_profile.Login)
 	}
+	new_user := old_user
+	new_user.Profile = new_profile
 	handler.users.SetUser(new_user.Login, new_user)
 	handler.users.DeleteUser(old_user.Login)
 	w.WriteHeader(http.StatusOK)
@@ -94,26 +97,28 @@ func (handler *HttpHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // POST /users/{login}
 func (handler *HttpHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	login := chi.URLParam(r, "login")
-	_, exists := handler.users.GetUser(login)
+	old_user, exists := handler.users.GetUser(login)
 	if exists {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
-	new_user := user.User{}
+	new_profile := user.Profile{}
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err = json.Unmarshal(data, &new_user); err != nil {
+	if err = json.Unmarshal(data, &new_profile); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if login != new_user.Login {
+	if login != new_profile.Login {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	handler.users.SetUser(new_user.Login, new_user)
+	new_user := old_user
+	new_user.Profile = new_profile
+	handler.users.SetUser(new_profile.Login, new_user)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -137,12 +142,12 @@ func (handler *HttpHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logins := strings.Split(r.URL.Query()["logins"][0], ",")
-	users := make([]user.User, 0)
+	profiles := make([]user.Profile, 0)
 	loginsFilename := ""
 	for i := range logins {
 		user, exists := handler.users.GetUser(logins[i])
 		if exists {
-			users = append(users, user)
+			profiles = append(profiles, user.Profile)
 			if len(loginsFilename) == 0 {
 				loginsFilename = logins[i]
 			} else {
@@ -150,7 +155,7 @@ func (handler *HttpHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	jsonData, err := json.Marshal(users)
+	jsonData, err := json.Marshal(profiles)
 	if err != nil {
 		w.WriteHeader(http.StatusBadGateway)
 		return
@@ -162,16 +167,19 @@ func (handler *HttpHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "PDF document with user information: %s\n", url)
 	w.WriteHeader(http.StatusOK)
 
+	// todo: transfer into queue
 	go func() {
 		var pdfdoc *gofpdf.Fpdf = nil
 		var err error
-		for i := range users {
-			pdfdoc, err = pdf.WriteUser(pdfdoc, users[i])
-			if err != nil {
-				return
+		for i := range logins {
+			user, exists := handler.users.GetUser(logins[i])
+			if exists {
+				pdfdoc, err = pdf.WriteUser(pdfdoc, user)
+				if err != nil {
+					return
+				}
 			}
 		}
-
 		err = pdfdoc.OutputFileAndClose(fmt.Sprintf("./pdf/%s.pdf", loginsFilename))
 		if err != nil {
 			log.Printf("Failed to write user %v", err)

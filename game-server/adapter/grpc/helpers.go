@@ -124,6 +124,7 @@ func (adapter *ServerAdapter) ListConnections(req *proto.DefaultRequest, stream 
 			if msg.SessionReadiness {
 				response.Readiness.Role = adapter.game.GetRole(req.Login)
 				response.Readiness.Players = adapter.game.GetMembers(adapter.game.GetParty(req.Login))
+				adapter.game.EnterGame(req.Login)
 			}
 			err := stream.Send(response)
 			if err != nil || response.Readiness.SessionReady {
@@ -199,5 +200,6 @@ func (adapter *ServerAdapter) GetStatus(ctx context.Context, req *proto.DefaultR
 }
 
 func (adapter *ServerAdapter) ExitGameSession(ctx context.Context, req *proto.DefaultRequest) (*proto.ExitGameSessionResponse, error) {
+	adapter.game.ExitGame(req.Login)
 	return &proto.ExitGameSessionResponse{}, nil
 }

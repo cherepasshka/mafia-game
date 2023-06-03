@@ -16,10 +16,8 @@ func (game *MafiaGame) AddPlayer(login string) (bool, Event) {
 		return false, Event{}
 
 	}
-	game.storage.SetUser(login, user.User{
-		Login:  login,
-		Gender: user.Undefined,
-	})
+	new_user := user.New(login)
+	game.storage.SetUser(login, new_user)
 
 	game.Events = append(game.Events, Event{User: login, Status: proto.State_connected, Time: time.Now()})
 	return true, game.Events[len(game.Events)-1]
@@ -166,14 +164,29 @@ func (game *MafiaGame) WaitForEverybody(user_login string) string {
 	return ghost
 }
 
-func (game *MafiaGame) ExitSession(user_login string) {
+func (game *MafiaGame) ExitGame(user_login string) {
 	game.guard.Lock()
 	defer game.guard.Unlock()
-	game.storage.RemovePlayer(user_login)
+	isVictory := false
+	winner := game.Winner(game.GetParty(user_login))
+	if game.GetRole(user_login) == proto.Roles_Mafia {
+		isVictory = (winner == proto.Roles_Mafia)
+	} else {
+		isVictory = (winner == proto.Roles_Civilian)
+	}
+
+	game.storage.IncGameCnt(user_login, isVictory)
+	game.storage.LeaveGameSession(user_login)
 }
 
 func (game *MafiaGame) EnterSession(user_login string) {
 	game.guard.Lock()
 	defer game.guard.Unlock()
 	game.storage.AddPlayer(user_login)
+}
+
+func (game *MafiaGame) EnterGame(user_login string) {
+	game.guard.Lock()
+	defer game.guard.Unlock()
+	game.storage.SetEnterTime(user_login, time.Now())
 }
