@@ -9,6 +9,7 @@ require (
 	github.com/fatih/color v1.15.0
 	github.com/go-chi/chi v1.5.4
 	github.com/golang/protobuf v1.5.2
+	github.com/jung-kurt/gofpdf v1.16.2
 	github.com/segmentio/kafka-go v0.4.40
 	github.com/spf13/pflag v1.0.5
 	google.golang.org/grpc v1.54.0

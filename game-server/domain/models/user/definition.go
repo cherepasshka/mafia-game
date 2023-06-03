@@ -10,7 +10,7 @@ const (
 
 type User struct {
 	Login  string     `json:"login"`
-	Emain  string     `json:"email"`
+	Email  string     `json:"email"`
 	Gender GenderType `json:"gender"`
-	// TODO IMAGE
+	// TODO: add image
 }

@@ -8,6 +8,6 @@ RUN go mod download
 ADD proto /mafia-game/proto/
 ADD game-server /mafia-game/game-server/
 ADD kafka-help /mafia-game/kafka-help/
-
+RUN mkdir pdf
 RUN go build -tags musl -o myapp  /mafia-game/game-server/cmd/main.go
 

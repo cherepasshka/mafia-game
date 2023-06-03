@@ -12,9 +12,6 @@ type Storage struct {
 
 	users       map[string]user.User
 	users_guard sync.Mutex
-
-	// distribution party.PartiesDistribution
-	// distrib_guard sync.Mutex
 }
 
 func New() *Storage {

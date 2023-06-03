@@ -19,7 +19,7 @@ type ServerAdapter struct {
 	moved_players map[int]int
 }
 
-func New(users *usersdb.Storage, brokerServers string) (*ServerAdapter, error) {
+func New(users *usersdb.Storage, brokerServers string) (*ServerAdapter, error) { // here storage is used
 	return &ServerAdapter{
 		game:        mafia_domain.NewGame(users),
 		connections: make(map[string]chan mafia_domain.Event),

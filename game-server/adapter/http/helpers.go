@@ -2,13 +2,33 @@ package http_mafia
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 
 	"github.com/go-chi/chi"
+	"github.com/jung-kurt/gofpdf"
+
 	"soa.mafia-game/game-server/domain/models/user"
+	"soa.mafia-game/game-server/internal/pdf"
 )
+
+func GetPdf(w http.ResponseWriter, r *http.Request) {
+	filename := chi.URLParam(r, "filename")
+	pdfBytes, err := ioutil.ReadFile(fmt.Sprintf("pdf/%s", filename))
+	if err != nil {
+		log.Printf("Failed to read file: %v", err)
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", "inline; filename=document.pdf")
+	w.Write(pdfBytes)
+}
 
 // GET /users/{login}
 func (handler *HttpHandler) GetUser(w http.ResponseWriter, r *http.Request) {
@@ -18,14 +38,31 @@ func (handler *HttpHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	jsonValue, err := json.Marshal(user)
+
+	jsonData, err := json.Marshal(user)
 	if err != nil {
 		w.WriteHeader(http.StatusBadGateway)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonValue)
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write(jsonData)
+	w.Write([]byte("\n"))
+
+	url := fmt.Sprintf("http://%s/pdf/%s.pdf", r.Host, login)
+	fmt.Fprintf(w, "PDF document with user information: %s\n", url)
+
+	go func() {
+		pdf, err := pdf.WriteUser(nil, user)
+		if err != nil {
+			return
+		}
+		err = pdf.OutputFileAndClose(fmt.Sprintf("./pdf/%s.pdf", login))
+		if err != nil {
+			log.Printf("Failed to write user %v", err)
+			return
+		}
+	}()
 }
 
 // PUT /users/{login}
@@ -101,10 +138,16 @@ func (handler *HttpHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	logins := strings.Split(r.URL.Query()["logins"][0], ",")
 	users := make([]user.User, 0)
+	loginsFilename := ""
 	for i := range logins {
 		user, exists := handler.users.GetUser(logins[i])
 		if exists {
 			users = append(users, user)
+			if len(loginsFilename) == 0 {
+				loginsFilename = logins[i]
+			} else {
+				loginsFilename = fmt.Sprintf("%s-%s", loginsFilename, logins[i])
+			}
 		}
 	}
 	jsonData, err := json.Marshal(users)
@@ -114,5 +157,26 @@ func (handler *HttpHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(jsonData)
 	w.Write([]byte("\n"))
+
+	url := fmt.Sprintf("http://%s/pdf/%s.pdf", r.Host, loginsFilename)
+	fmt.Fprintf(w, "PDF document with user information: %s\n", url)
 	w.WriteHeader(http.StatusOK)
+
+	go func() {
+		var pdfdoc *gofpdf.Fpdf = nil
+		var err error
+		for i := range users {
+			pdfdoc, err = pdf.WriteUser(pdfdoc, users[i])
+			if err != nil {
+				return
+			}
+		}
+
+		err = pdfdoc.OutputFileAndClose(fmt.Sprintf("./pdf/%s.pdf", loginsFilename))
+		if err != nil {
+			log.Printf("Failed to write user %v", err)
+			return
+		}
+
+	}()
 }

@@ -73,7 +73,9 @@ func (app *mafiaApplication) Start(host string, port int) error {
 }
 
 func (app *mafiaApplication) Stop(ctx context.Context) {
-	app.game.Stop()
+	if app.game != nil {
+		app.game.Stop()
+	}
 	if app.grpcClient != nil {
 		app.grpcClient.LeaveSession(ctx, &proto.DefaultRequest{Login: app.login})
 		app.grpcClient.Stop()

@@ -17,7 +17,8 @@ func (game *MafiaGame) AddPlayer(login string) (bool, Event) {
 
 	}
 	game.storage.SetUser(login, user.User{
-		Login: login,
+		Login:  login,
+		Gender: user.Undefined,
 	})
 
 	game.Events = append(game.Events, Event{User: login, Status: proto.State_connected, Time: time.Now()})
