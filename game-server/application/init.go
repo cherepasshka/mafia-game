@@ -22,7 +22,7 @@ type MafiaApplication struct {
 	http_mafia   *http_mafia.HttpHandler
 	users        *usersdb.Storage
 	http_server  *http.Server
-	pool *threadpool.ThreadPool
+	pool         *threadpool.ThreadPool
 }
 
 func New() (*MafiaApplication, error) {

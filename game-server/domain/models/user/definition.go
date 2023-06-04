@@ -11,10 +11,10 @@ const (
 )
 
 type Profile struct {
-	Login  string     `json:"login"`
-	Email  string     `json:"email"`
-	Gender GenderType `json:"gender"`
-	// TODO: add image
+	Login     string     `json:"login"`
+	Email     string     `json:"email"`
+	Gender    GenderType `json:"gender"`
+	ImageName string     `json:"image"`
 }
 
 type User struct {
