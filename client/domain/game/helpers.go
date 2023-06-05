@@ -9,6 +9,8 @@ import (
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
+var ErrSessionInterrupted = fmt.Errorf("Some players left game session")
+
 func (game *Game) PrintAlive() {
 	fmt.Printf("Alive members of this session are: ")
 	for _, player := range game.alive {
@@ -20,13 +22,19 @@ func (game *Game) PrintAlive() {
 func (game *Game) Start(ctx context.Context, grpcClient *domain_client.Client) error {
 	for {
 		game.PrintAlive()
-		err := game.player.MakeNightMove(ctx, game.alive, grpcClient)
+		isActive, err := game.player.MakeNightMove(ctx, game.alive, grpcClient)
 		if err != nil {
 			return err
+		}
+		if !isActive {
+			return ErrSessionInterrupted
 		}
 		rsp, err := grpcClient.StartDay(ctx, &proto.DefaultRequest{Login: game.player.GetLogin()})
 		if err != nil {
 			return err
+		}
+		if !rsp.Status.AllConnected {
+			return ErrSessionInterrupted
 		}
 		if rsp.Victim == game.player.GetLogin() {
 			fmt.Print("\tYou were killed this night!\n")
@@ -37,13 +45,19 @@ func (game *Game) Start(ctx context.Context, grpcClient *domain_client.Client) e
 		game.alive = rsp.Alive
 		fmt.Println("Start day")
 		game.PrintAlive()
-		err = game.player.VoteForMafia(ctx, game.alive, grpcClient)
+		isActive, err = game.player.VoteForMafia(ctx, game.alive, grpcClient)
 		if err != nil {
 			return err
+		}
+		if !isActive {
+			return ErrSessionInterrupted
 		}
 		rsp1, err := grpcClient.GetStatus(ctx, &proto.DefaultRequest{Login: game.player.GetLogin()})
 		if err != nil {
 			return err
+		}
+		if !rsp1.Status.AllConnected {
+			return ErrSessionInterrupted
 		}
 		game.alive = rsp1.Alive
 		if !rsp1.GameStatus.Active {

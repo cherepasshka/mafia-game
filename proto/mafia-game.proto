@@ -40,6 +40,10 @@ message ListConnectionsResponse {
     SessionReadiness readiness = 4;
 }
 
+message GameSessionStatus {
+    bool all_connected = 1;
+}
+
 message VoteForMafiaRequest {
     string mafia_guess = 1;
     string login = 2;
@@ -48,6 +52,7 @@ message VoteForMafiaRequest {
 message VoteForMafiaResponse {
     string killed_user = 1;
     Roles killed_user_role = 2;
+    GameSessionStatus status = 3;
 }
 
 message MoveRequest {
@@ -58,6 +63,7 @@ message MoveRequest {
 message MoveResponse {
     bool accepted = 1;
     string reason = 2;
+    GameSessionStatus status = 3;
 }
 
 message GameStatus {
@@ -68,11 +74,13 @@ message GameStatus {
 message DayResponse{
     string victim = 1;
     repeated string alive = 2;
+    GameSessionStatus status = 3;
 }
 
 message StatusResponse{
     repeated string alive = 1;
     GameStatus game_status = 2;
+    GameSessionStatus status = 3;
 }
 
 message ExitGameSessionResponse {
@@ -87,6 +95,7 @@ service MafiaService {
     rpc ConnectToSession(DefaultRequest) returns (ConnectToSessionResponse) {}
     rpc LeaveSession(DefaultRequest) returns (LeaveSessionResponse) {}
     rpc ListConnections(DefaultRequest) returns (stream ListConnectionsResponse) {}
+    
     rpc VoteForMafia(VoteForMafiaRequest) returns (VoteForMafiaResponse) {}
     rpc MakeMove(MoveRequest) returns (MoveResponse) {}
     rpc StartDay(DefaultRequest) returns (DayResponse) {}

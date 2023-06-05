@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"soa.mafia-game/client/domain/game"
@@ -49,7 +50,12 @@ func (app *mafiaApplication) Start(host string, port int) error {
 	for {
 		fmt.Printf("Your session is ready, you are %v\n", role)
 		if err = app.game.Start(context.Background(), app.grpcClient); err != nil {
-			return err
+			if errors.Is(game.ErrSessionInterrupted, err) {
+				fmt.Println("You was disconnected because some players left your game session")
+				app.grpcClient.ExitGameSession(context.Background(), &proto.DefaultRequest{Login: login})
+			} else {
+				return err
+			}
 		}
 		proceed, err := console.AskPrompt("Do you want to continue?", []string{"yes", "no"})
 		if err != nil {

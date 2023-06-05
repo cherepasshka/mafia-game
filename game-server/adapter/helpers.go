@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mafia_domain "soa.mafia-game/game-server/domain/mafia-game"
+	"soa.mafia-game/game-server/domain/models/party"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
@@ -56,6 +57,19 @@ func (adapter *ServerAdapter) closeConnection(user_login string) {
 	delete(adapter.connections, user_login)
 }
 
+func (adapter *ServerAdapter) closePartyChannels(user_login string) {
+	adapter.guard.Lock()
+	defer adapter.guard.Unlock()
+	members := adapter.game.GetMembers(adapter.game.GetParty(user_login))
+	for i := range members {
+		start_next_day, exist := adapter.victims[members[i]]
+		if exist {
+			close(start_next_day)
+			delete(adapter.victims, members[i])
+		}
+	}
+}
+
 func (adapter *ServerAdapter) CloseChannels(user_login string) {
 	adapter.guard.Lock()
 	defer adapter.guard.Unlock()
@@ -80,6 +94,7 @@ func (adapter *ServerAdapter) LeaveSession(ctx context.Context, request *proto.D
 
 	fmt.Printf("Bye %v!\n", request.Login)
 	adapter.CloseChannels(request.Login)
+	adapter.closePartyChannels(request.Login)
 	return &proto.LeaveSessionResponse{Success: success}, nil
 }
 
@@ -136,68 +151,93 @@ func (adapter *ServerAdapter) ListConnections(req *proto.DefaultRequest, stream 
 
 func (adapter *ServerAdapter) MakeMove(ctx context.Context, req *proto.MoveRequest) (*proto.MoveResponse, error) {
 	role := adapter.game.GetRole(req.Login)
-	party := adapter.game.GetParty(req.Login)
-	response := &proto.MoveResponse{}
+	partyId := adapter.game.GetParty(req.Login)
+	response := &proto.MoveResponse{
+		Status: &proto.GameSessionStatus{AllConnected: true},
+	}
 	adapter.guard.Lock()
 	defer adapter.guard.Unlock()
 	if role == proto.Roles_Civilian {
-		adapter.moved_players[party]++
+		adapter.moved_players[partyId]++
 	} else if role == proto.Roles_Commissioner {
 		if adapter.game.GetRole(req.Target) == proto.Roles_Mafia {
 			response.Accepted = true
 		} else {
 			response.Accepted = false
 		}
-		adapter.moved_players[party]++
+		adapter.moved_players[partyId]++
 
 	} else if role == proto.Roles_Mafia {
 		if adapter.game.IsPlayerAlive(req.Target) {
-			adapter.game.RecentVictim[party] = req.Target
+			adapter.game.RecentVictim[partyId] = req.Target
 			response.Accepted = true
-			adapter.moved_players[party]++
+			adapter.moved_players[partyId]++
 		} else {
 			response.Accepted = false
 		}
 	}
 	alive_cnt := len(adapter.game.GetAliveMembers(adapter.game.GetParty(req.Login)))
-	if adapter.moved_players[party] == alive_cnt {
-		adapter.game.Kill(adapter.game.RecentVictim[party])
-		victim := adapter.game.RecentVictim[party]
-		adapter.game.RecentVictim[party] = "None"
+	if adapter.moved_players[partyId] == alive_cnt {
+		adapter.game.Kill(adapter.game.RecentVictim[partyId])
+		victim := adapter.game.RecentVictim[partyId]
+		adapter.game.RecentVictim[partyId] = "None"
 		for _, member := range adapter.game.GetMembers(adapter.game.GetParty(req.Login)) {
 			adapter.victims[member] <- victim
 		}
-		adapter.moved_players[party] -= alive_cnt
+		adapter.moved_players[partyId] -= alive_cnt
 	}
+	// handle players exits
+	response.Status.AllConnected = len(adapter.game.GetMembers(adapter.game.GetParty(req.Login))) == party.PARTY_SIZE
 	return response, nil
 }
 
 func (adapter *ServerAdapter) StartDay(ctx context.Context, req *proto.DefaultRequest) (*proto.DayResponse, error) {
-	victim := <-adapter.victims[req.Login]
-	resp := &proto.DayResponse{
+	victim, ok := <-adapter.victims[req.Login]
+	if !ok {
+		return &proto.DayResponse{
+			Status: &proto.GameSessionStatus{AllConnected: false},
+		}, nil
+	}
+	response := &proto.DayResponse{
 		Victim: victim,
 		Alive:  adapter.game.GetAliveMembers(adapter.game.GetParty(req.Login)),
+		Status: &proto.GameSessionStatus{AllConnected: true},
 	}
-	return resp, nil
+	// handle players exits
+	response.Status.AllConnected = len(adapter.game.GetMembers(adapter.game.GetParty(req.Login))) == party.PARTY_SIZE
+	return response, nil
 }
 
 func (adapter *ServerAdapter) VoteForMafia(ctx context.Context, req *proto.VoteForMafiaRequest) (*proto.VoteForMafiaResponse, error) {
 	adapter.game.VoteFor(req.Login, req.MafiaGuess)
 	ghost := adapter.game.WaitForEverybody(req.Login)
-	response := &proto.VoteForMafiaResponse{KilledUser: ghost, KilledUserRole: adapter.game.GetRole(ghost)}
+	response := &proto.VoteForMafiaResponse{
+		KilledUser:     ghost,
+		KilledUserRole: adapter.game.GetRole(ghost),
+		Status:         &proto.GameSessionStatus{AllConnected: true},
+	}
+
+	// handle players exits
+	response.Status.AllConnected = len(adapter.game.GetMembers(adapter.game.GetParty(req.Login))) == party.PARTY_SIZE
 	return response, nil
 }
 
 func (adapter *ServerAdapter) GetStatus(ctx context.Context, req *proto.DefaultRequest) (*proto.StatusResponse, error) {
-	return &proto.StatusResponse{
+	response := &proto.StatusResponse{
 		Alive: adapter.game.GetAliveMembers(adapter.game.GetParty(req.Login)),
 		GameStatus: &proto.GameStatus{
 			Active: adapter.game.IsActive(adapter.game.GetParty(req.Login)),
 			Winner: adapter.game.Winner(adapter.game.GetParty(req.Login)),
 		},
-	}, nil
+		Status: &proto.GameSessionStatus{AllConnected: true},
+	}
+
+	// handle players exits
+	response.Status.AllConnected = len(adapter.game.GetMembers(adapter.game.GetParty(req.Login))) == party.PARTY_SIZE
+	return response, nil
 }
 
 func (adapter *ServerAdapter) ExitGameSession(ctx context.Context, req *proto.DefaultRequest) (*proto.ExitGameSessionResponse, error) {
+	adapter.game.ExitSession(req.Login)
 	return &proto.ExitGameSessionResponse{}, nil
 }

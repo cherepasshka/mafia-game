@@ -18,10 +18,10 @@ const (
 type User interface {
 	GetLogin() string
 	GetRole() proto.Roles
-	GetStatus() LiveStatus
+	GetLiveStatus() LiveStatus
 	SetStatus(LiveStatus)
-	MakeNightMove(context.Context, []string, proto.MafiaServiceClient) error
-	VoteForMafia(context.Context, []string, proto.MafiaServiceClient) error
+	MakeNightMove(context.Context, []string, proto.MafiaServiceClient) (isValid bool, err error)
+	VoteForMafia(context.Context, []string, proto.MafiaServiceClient) (isValid bool, err error)
 	Stop()
 }
 
@@ -55,7 +55,7 @@ func (user *CommunicatorUser) GetRole() proto.Roles {
 	return proto.Roles_Undefined
 }
 
-func (user *CommunicatorUser) GetStatus() LiveStatus {
+func (user *CommunicatorUser) GetLiveStatus() LiveStatus {
 	return user.Status
 }
 
@@ -71,10 +71,10 @@ func (user *CommunicatorUser) Stop() {
 	}
 }
 
-func (user *CommunicatorUser) MakeNightMove(context.Context, []string, proto.MafiaServiceClient) error {
-	return fmt.Errorf("not implemented")
+func (user *CommunicatorUser) MakeNightMove(context.Context, []string, proto.MafiaServiceClient) (isValid bool, err error) {
+	return false, fmt.Errorf("not implemented")
 }
 
-func (user *CommunicatorUser) VoteForMafia(context.Context, []string, proto.MafiaServiceClient) error {
-	return fmt.Errorf("not implemented")
+func (user *CommunicatorUser) VoteForMafia(context.Context, []string, proto.MafiaServiceClient) (isValid bool, err error) {
+	return false, fmt.Errorf("not implemented")
 }

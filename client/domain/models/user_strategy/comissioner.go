@@ -20,10 +20,10 @@ func (user *Commissioner) GetRole() proto.Roles {
 	return proto.Roles_Commissioner
 }
 
-func (user *Commissioner) MakeNightMove(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) error {
+func (user *Commissioner) MakeNightMove(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) (isValid bool, err error) {
 	if user.Status == models.Dead {
 		fmt.Println("You are dead, so you skip this night")
-		return nil
+		return true, nil
 	}
 	suspected := user.Login
 	for suspected == user.Login {
@@ -31,7 +31,7 @@ func (user *Commissioner) MakeNightMove(ctx context.Context, alive_players []str
 	}
 	response, err := client.MakeMove(ctx, &proto.MoveRequest{Login: user.Login, Target: suspected})
 	if err != nil {
-		return err
+		return false, err
 	}
 	if response.Accepted {
 		fmt.Printf("You suspected %s correct, this user is mafia\n", suspected)
@@ -40,10 +40,10 @@ func (user *Commissioner) MakeNightMove(ctx context.Context, alive_players []str
 		fmt.Printf("You suspected %s wrong, this user is not mafia\n", suspected)
 		user.lastGuess = ""
 	}
-	return nil
+	return response.Status.AllConnected, nil
 }
 
-func (user *Commissioner) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) error {
+func (user *Commissioner) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) (isValid bool, err error) {
 	var guess string
 	user.ExitedChat = false
 	user.ChatService.Start(user.Login, user.Session, user.Partition, user.Status == models.Dead)
@@ -57,12 +57,12 @@ func (user *Commissioner) VoteForMafia(ctx context.Context, alive_players []stri
 	}
 	rsp, err := client.VoteForMafia(ctx, &proto.VoteForMafiaRequest{Login: user.Login, MafiaGuess: guess})
 	if err != nil {
-		return err
+		return false, err
 	}
 	if rsp.KilledUser == user.Login {
 		fmt.Println("Most voted for you")
 	} else {
 		fmt.Printf("Most voted for %s, this user had role: %s\n", rsp.KilledUser, rsp.KilledUserRole)
 	}
-	return nil
+	return rsp.Status.AllConnected, nil
 }
