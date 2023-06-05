@@ -32,6 +32,16 @@ type BaseUser struct {
 	Partition int32
 }
 
+func (user *BaseUser) ExcludeFromAliveList(alive_users []string) []string {
+	result := make([]string, 0)
+	for i := range alive_users {
+		if alive_users[i] != user.Login {
+			result = append(result, alive_users[i])
+		}
+	}
+	return result
+}
+
 type CommunicatorUser struct {
 	BaseUser
 	ExitedChat bool

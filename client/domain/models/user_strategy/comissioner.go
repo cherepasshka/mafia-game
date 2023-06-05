@@ -27,7 +27,7 @@ func (user *Commissioner) MakeNightMove(ctx context.Context, alive_players []str
 	}
 	suspected := user.Login
 	for suspected == user.Login {
-		suspected, _ = console.AskPrompt("Select suspect", alive_players)
+		suspected, _ = console.AskPrompt("Select suspect", user.ExcludeFromAliveList(alive_players))
 	}
 	response, err := client.MakeMove(ctx, &proto.MoveRequest{Login: user.Login, Target: suspected})
 	if err != nil {
@@ -44,17 +44,15 @@ func (user *Commissioner) MakeNightMove(ctx context.Context, alive_players []str
 }
 
 func (user *Commissioner) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) error {
-	guess := user.Login
+	var guess string
 	user.ExitedChat = false
 	user.ChatService.Start(user.Login, user.Session, user.Partition, user.Status == models.Dead)
 	user.ExitedChat = true
 	if user.Status == models.Dead {
-		fmt.Println("You are dead, so you skip this day vote")
+		fmt.Println("You are dead, so you skip this day vote, please wait until alive finish discussion")
 		guess = "None"
 	} else {
-		for guess == user.Login {
-			guess, _ = console.AskPrompt("Select your mafia guess", alive_players)
-		}
+		guess, _ = console.AskPrompt("Select your mafia guess", user.ExcludeFromAliveList(alive_players))
 		fmt.Printf("You voted for %s\n", guess)
 	}
 	rsp, err := client.VoteForMafia(ctx, &proto.VoteForMafiaRequest{Login: user.Login, MafiaGuess: guess})
