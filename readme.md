@@ -2,7 +2,7 @@
 
 ## Сетевая версия игры Мафия
 
-Сервис для игры в мафию состоит из сервера, расположенного в [server](https://github.com/cherepasshka/mafia-game/tree/main/server), и клиента, расположенного в [client](https://github.com/cherepasshka/mafia-game/tree/main/client). Скомпилированный файл клиента, готовый к запуску, это файл [mafia-client](https://github.com/cherepasshka/mafia-game/blob/main/mafia-client). Докер образ сервера выложен в [dockerhub](https://hub.docker.com/repository/docker/cherepashka/soa-practice-2)
+Сервис для игры в мафию состоит из сервера, расположенного в [server](https://github.com/cherepasshka/mafia-game/tree/main/game-server), и клиента, расположенного в [client](https://github.com/cherepasshka/mafia-game/tree/main/client). Скомпилированный файл клиента, готовый к запуску, это файл [mafia-client](https://github.com/cherepasshka/mafia-game/blob/main/mafia-client). Докер образ сервера выложен в [dockerhub](https://hub.docker.com/repository/docker/cherepashka/soa-practice-3)
 
 ## Использование
 
