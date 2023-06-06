@@ -153,7 +153,7 @@ func (adapter *ServerAdapter) MakeMove(ctx context.Context, req *proto.MoveReque
 	role := adapter.game.GetRole(req.Login)
 	partyId := adapter.game.GetParty(req.Login)
 	response := &proto.MoveResponse{
-		Status: &proto.GameSessionStatus{AllConnected: true},
+		SessionStatus: &proto.GameSessionStatus{AllConnected: true},
 	}
 	adapter.guard.Lock()
 	defer adapter.guard.Unlock()
@@ -187,7 +187,7 @@ func (adapter *ServerAdapter) MakeMove(ctx context.Context, req *proto.MoveReque
 		adapter.moved_players[partyId] -= alive_cnt
 	}
 	// handle players exits
-	response.Status.AllConnected = len(adapter.game.GetMembers(adapter.game.GetParty(req.Login))) == party.PARTY_SIZE
+	response.SessionStatus.AllConnected = len(adapter.game.GetMembers(adapter.game.GetParty(req.Login))) == party.PARTY_SIZE
 	return response, nil
 }
 
@@ -195,16 +195,16 @@ func (adapter *ServerAdapter) StartDay(ctx context.Context, req *proto.DefaultRe
 	victim, ok := <-adapter.victims[req.Login]
 	if !ok {
 		return &proto.DayResponse{
-			Status: &proto.GameSessionStatus{AllConnected: false},
+			SessionStatus: &proto.GameSessionStatus{AllConnected: false},
 		}, nil
 	}
 	response := &proto.DayResponse{
 		Victim: victim,
 		Alive:  adapter.game.GetAliveMembers(adapter.game.GetParty(req.Login)),
-		Status: &proto.GameSessionStatus{AllConnected: true},
+		SessionStatus: &proto.GameSessionStatus{AllConnected: true},
 	}
 	// handle players exits
-	response.Status.AllConnected = len(adapter.game.GetMembers(adapter.game.GetParty(req.Login))) == party.PARTY_SIZE
+	response.SessionStatus.AllConnected = len(adapter.game.GetMembers(adapter.game.GetParty(req.Login))) == party.PARTY_SIZE
 	return response, nil
 }
 
@@ -214,11 +214,11 @@ func (adapter *ServerAdapter) VoteForMafia(ctx context.Context, req *proto.VoteF
 	response := &proto.VoteForMafiaResponse{
 		KilledUser:     ghost,
 		KilledUserRole: adapter.game.GetRole(ghost),
-		Status:         &proto.GameSessionStatus{AllConnected: true},
+		SessionStatus:         &proto.GameSessionStatus{AllConnected: true},
 	}
 
 	// handle players exits
-	response.Status.AllConnected = len(adapter.game.GetMembers(adapter.game.GetParty(req.Login))) == party.PARTY_SIZE
+	response.SessionStatus.AllConnected = len(adapter.game.GetMembers(adapter.game.GetParty(req.Login))) == party.PARTY_SIZE
 	return response, nil
 }
 
@@ -229,11 +229,11 @@ func (adapter *ServerAdapter) GetStatus(ctx context.Context, req *proto.DefaultR
 			Active: adapter.game.IsActive(adapter.game.GetParty(req.Login)),
 			Winner: adapter.game.Winner(adapter.game.GetParty(req.Login)),
 		},
-		Status: &proto.GameSessionStatus{AllConnected: true},
+		SessionStatus: &proto.GameSessionStatus{AllConnected: true},
 	}
 
 	// handle players exits
-	response.Status.AllConnected = len(adapter.game.GetMembers(adapter.game.GetParty(req.Login))) == party.PARTY_SIZE
+	response.SessionStatus.AllConnected = len(adapter.game.GetMembers(adapter.game.GetParty(req.Login))) == party.PARTY_SIZE
 	return response, nil
 }
 

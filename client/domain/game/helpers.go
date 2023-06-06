@@ -33,7 +33,7 @@ func (game *Game) Start(ctx context.Context, grpcClient *domain_client.Client) e
 		if err != nil {
 			return err
 		}
-		if !rsp.Status.AllConnected {
+		if !rsp.SessionStatus.AllConnected {
 			return ErrSessionInterrupted
 		}
 		if rsp.Victim == game.player.GetLogin() {
@@ -52,16 +52,16 @@ func (game *Game) Start(ctx context.Context, grpcClient *domain_client.Client) e
 		if !isActive {
 			return ErrSessionInterrupted
 		}
-		rsp1, err := grpcClient.GetStatus(ctx, &proto.DefaultRequest{Login: game.player.GetLogin()})
+		status_rsp, err := grpcClient.GetStatus(ctx, &proto.DefaultRequest{Login: game.player.GetLogin()})
 		if err != nil {
 			return err
 		}
-		if !rsp1.Status.AllConnected {
+		if !status_rsp.SessionStatus.AllConnected {
 			return ErrSessionInterrupted
 		}
-		game.alive = rsp1.Alive
-		if !rsp1.GameStatus.Active {
-			if rsp1.GameStatus.Winner == proto.Roles_Civilian {
+		game.alive = status_rsp.Alive
+		if !status_rsp.GameStatus.Active {
+			if status_rsp.GameStatus.Winner == proto.Roles_Civilian {
 				fmt.Printf("Civilians won!\n")
 			} else {
 				fmt.Printf("Mafia won =(\n")

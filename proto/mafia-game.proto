@@ -52,7 +52,7 @@ message VoteForMafiaRequest {
 message VoteForMafiaResponse {
     string killed_user = 1;
     Roles killed_user_role = 2;
-    GameSessionStatus status = 3;
+    GameSessionStatus session_status = 3;
 }
 
 message MoveRequest {
@@ -63,7 +63,7 @@ message MoveRequest {
 message MoveResponse {
     bool accepted = 1;
     string reason = 2;
-    GameSessionStatus status = 3;
+    GameSessionStatus session_status = 3;
 }
 
 message GameStatus {
@@ -74,13 +74,13 @@ message GameStatus {
 message DayResponse{
     string victim = 1;
     repeated string alive = 2;
-    GameSessionStatus status = 3;
+    GameSessionStatus session_status = 3;
 }
 
 message StatusResponse{
     repeated string alive = 1;
     GameStatus game_status = 2;
-    GameSessionStatus status = 3;
+    GameSessionStatus session_status = 3;
 }
 
 message ExitGameSessionResponse {

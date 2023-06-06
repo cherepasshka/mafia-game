@@ -22,7 +22,7 @@ func (user *Civilian) GetRole() proto.Roles {
 func (user *Civilian) MakeNightMove(ctx context.Context, alive []string, client proto.MafiaServiceClient) (isValid bool, err error) {
 	if user.Status == models.Alive {
 		rsp, err := client.MakeMove(ctx, &proto.MoveRequest{Login: user.Login})
-		return rsp.Status.AllConnected, err
+		return rsp.SessionStatus.AllConnected, err
 	}
 	return true, nil
 }
@@ -48,5 +48,5 @@ func (user *Civilian) VoteForMafia(ctx context.Context, alive_players []string, 
 	} else {
 		fmt.Printf("Most voted for %s, this user had role: %s\n", rsp.KilledUser, rsp.KilledUserRole)
 	}
-	return rsp.Status.AllConnected, nil
+	return rsp.SessionStatus.AllConnected, nil
 }

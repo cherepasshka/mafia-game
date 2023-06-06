@@ -42,10 +42,10 @@ func (user *Mafia) MakeNightMove(ctx context.Context, alive_players []string, cl
 			return false, err
 		}
 	}
-	if response.Status.AllConnected {
+	if response.SessionStatus.AllConnected {
 		fmt.Printf("You murder %s\n", victim)
 	}
-	return response.Status.AllConnected, nil
+	return response.SessionStatus.AllConnected, nil
 }
 
 func (user *Mafia) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) (isValid bool, err error) {
@@ -69,5 +69,5 @@ func (user *Mafia) VoteForMafia(ctx context.Context, alive_players []string, cli
 	} else {
 		fmt.Printf("Most voted for %s, this user had role: %s\n", rsp.KilledUser, rsp.KilledUserRole)
 	}
-	return rsp.Status.AllConnected, nil
+	return rsp.SessionStatus.AllConnected, nil
 }

@@ -33,14 +33,16 @@ func (user *Commissioner) MakeNightMove(ctx context.Context, alive_players []str
 	if err != nil {
 		return false, err
 	}
-	if response.Accepted {
-		fmt.Printf("You suspected %s correct, this user is mafia\n", suspected)
-		user.lastGuess = suspected
-	} else {
-		fmt.Printf("You suspected %s wrong, this user is not mafia\n", suspected)
-		user.lastGuess = ""
+	if response.SessionStatus.AllConnected {
+		if response.Accepted {
+			fmt.Printf("You suspected %s correct, this user is mafia\n", suspected)
+			user.lastGuess = suspected
+		} else {
+			fmt.Printf("You suspected %s wrong, this user is not mafia\n", suspected)
+			user.lastGuess = ""
+		}
 	}
-	return response.Status.AllConnected, nil
+	return response.SessionStatus.AllConnected, nil
 }
 
 func (user *Commissioner) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) (isValid bool, err error) {
@@ -64,5 +66,5 @@ func (user *Commissioner) VoteForMafia(ctx context.Context, alive_players []stri
 	} else {
 		fmt.Printf("Most voted for %s, this user had role: %s\n", rsp.KilledUser, rsp.KilledUserRole)
 	}
-	return rsp.Status.AllConnected, nil
+	return rsp.SessionStatus.AllConnected, nil
 }
