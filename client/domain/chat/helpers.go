@@ -28,7 +28,7 @@ func (service *ChatService) Start(user_login, sessionId string, partition int32,
 
 	go service.Listen(ctx, user_login, sessionId, partition)
 
-	color.Black("To stop messaging type `exit`")
+	fmt.Println("To stop messaging type `exit`")
 	for {
 		line, err := bufio.NewReader(os.Stdin).ReadString('\n')
 		msg := line[:len(line)-1]
@@ -82,7 +82,6 @@ func (service *ChatService) Listen(ctx context.Context, user_login, sessionId st
 		}
 		if user != user_login {
 			colorfulPrint(fmt.Sprintf("%v: %v", user, string(message.Value)), number[user])
-			// color.Black("%v says %v", , string(message.Value))
 		}
 	}
 }

@@ -2,8 +2,8 @@ package application
 
 import (
 	"context"
-
-	"github.com/fatih/color"
+	"errors"
+	"fmt"
 
 	"soa.mafia-game/client/domain/game"
 	domain_client "soa.mafia-game/client/domain/grpc-client"
@@ -48,9 +48,14 @@ func (app *mafiaApplication) Start(host string, port int) error {
 	}
 	app.game = game.New(models.MakeUser(login, role, readiness.SessionId, readiness.Partition), readiness.Players)
 	for {
-		color.Black("Your session is ready, you are %v\n", role)
+		fmt.Printf("Your session is ready, you are %v\n", role)
 		if err = app.game.Start(context.Background(), app.grpcClient); err != nil {
-			return err
+			if errors.Is(game.ErrSessionInterrupted, err) {
+				fmt.Println("You was disconnected because some players left your game session")
+				app.grpcClient.ExitGameSession(context.Background(), &proto.DefaultRequest{Login: login})
+			} else {
+				return err
+			}
 		}
 		proceed, err := console.AskPrompt("Do you want to continue?", []string{"yes", "no"})
 		if err != nil {

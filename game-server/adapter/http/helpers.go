@@ -123,7 +123,9 @@ func (handler *HttpHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	new_user := old_user
 	new_user.Profile = new_profile
 	handler.users.SetUser(new_user.Login, new_user)
-	handler.users.DeleteUser(old_user.Login)
+	if new_user.Login != old_user.Login {
+		handler.users.DeleteUser(old_user.Login)
+	}
 	w.WriteHeader(http.StatusOK)
 }
 

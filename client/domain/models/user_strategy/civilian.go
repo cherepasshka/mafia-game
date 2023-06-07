@@ -19,35 +19,34 @@ func (user *Civilian) GetRole() proto.Roles {
 	return proto.Roles_Civilian
 }
 
-func (user *Civilian) MakeNightMove(ctx context.Context, alive []string, client proto.MafiaServiceClient) error {
+func (user *Civilian) MakeNightMove(ctx context.Context, alive []string, client proto.MafiaServiceClient) (isValid bool, err error) {
 	if user.Status == models.Alive {
-		client.MakeMove(ctx, &proto.MoveRequest{Login: user.Login})
+		rsp, err := client.MakeMove(ctx, &proto.MoveRequest{Login: user.Login})
+		return rsp.SessionStatus.AllConnected, err
 	}
-	return nil
+	return true, nil
 }
 
-func (user *Civilian) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) error {
-	guess := user.Login
+func (user *Civilian) VoteForMafia(ctx context.Context, alive_players []string, client proto.MafiaServiceClient) (isValid bool, err error) {
+	var guess string
 	user.ExitedChat = false
 	user.ChatService.Start(user.Login, user.Session, user.Partition, user.Status == models.Dead)
 	user.ExitedChat = true
 	if user.Status == models.Dead {
-		fmt.Println("You are dead, so you skip this day vote")
+		fmt.Println("You are dead, so you skip this day vote, please wait until alive finish discussion")
 		guess = "None"
 	} else {
-		for guess == user.Login {
-			guess, _ = console.AskPrompt("Select your mafia guess", alive_players)
-		}
+		guess, _ = console.AskPrompt("Select your mafia guess", user.ExcludeFromAliveList(alive_players))
 		fmt.Printf("You voted for %s\n", guess)
 	}
 	rsp, err := client.VoteForMafia(ctx, &proto.VoteForMafiaRequest{Login: user.Login, MafiaGuess: guess})
 	if err != nil {
-		return err
+		return false, err
 	}
 	if rsp.KilledUser == user.Login {
 		fmt.Println("Most voted for you")
 	} else {
 		fmt.Printf("Most voted for %s, this user had role: %s\n", rsp.KilledUser, rsp.KilledUserRole)
 	}
-	return nil
+	return rsp.SessionStatus.AllConnected, nil
 }

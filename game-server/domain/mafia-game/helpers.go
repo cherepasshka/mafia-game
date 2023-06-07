@@ -179,6 +179,12 @@ func (game *MafiaGame) ExitGame(user_login string) {
 	game.storage.LeaveGameSession(user_login)
 }
 
+func (game *MafiaGame) ExitSession(user_login string) {
+	game.guard.Lock()
+	defer game.guard.Unlock()
+	game.storage.AddPlayer(user_login)
+}
+
 func (game *MafiaGame) EnterSession(user_login string) {
 	game.guard.Lock()
 	defer game.guard.Unlock()
