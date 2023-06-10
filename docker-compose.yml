@@ -1,9 +1,19 @@
 version: "2"
 
 services:
-  mafia-server:
-    image: cherepashka/soa-practice-4:game-server
+  scoreboard-service-server:
+    image: cherepashka/soa-practice-5:scoreboard-service-server
     command: /mafia-game/myapp
+    environment:
+      PORT: 9002
+    ports:
+      - 9002:9002
+    restart: always
+    stop_signal: SIGINT
+    stop_grace_period: 30s
+    
+  mafia-server:
+    image: cherepashka/soa-practice-5:game-server
     ports: 
       - 9000:9000
       - 9001:9001
@@ -11,15 +21,17 @@ services:
       KAFKA_BROKER_URL: kafka1:19092
       MAFIA_GAME_ADDRESS: :9000
       HTTP_ADDRESS: :9001
+      GRAPHQL_ADDRESS: http://scoreboard-service-server:9002/query
       MAX_WORKERS: 2
     stop_signal: SIGINT
     stop_grace_period: 30s
     depends_on:
       - kafka1
       - zoo1
+      - scoreboard-service-server
 
   chat-server:
-    image: cherepashka/soa-practice-4:chat-server
+    image: cherepashka/soa-practice-5:chat-server
     command: /mafia-game/myapp
     environment:
       KAFKA_BROKER_URL: kafka1:19092
@@ -63,3 +75,4 @@ services:
     entrypoint: ./kowl --config.filepath=/etc/kowl/config.yaml
     depends_on:
       - kafka1
+    

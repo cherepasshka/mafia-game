@@ -3,11 +3,12 @@
 - [Описание](#description)
 - [Использование](#usage)
 - [Профили пользователей и взаимодействие с http](#http)
+- [Доски текущих и прошедших игр](#scoreboards)
 
 <a name="description"></a> 
 ## Сетевая версия игры Мафия
 
-Сервис для игры в мафию состоит из сервера, расположенного в [server](https://github.com/cherepasshka/mafia-game/tree/rest/game-server), и клиента, расположенного в [client](https://github.com/cherepasshka/mafia-game/tree/rest/client). Докер образ сервера выложен в [dockerhub](https://hub.docker.com/repository/docker/cherepashka/soa-practice-4)
+Сервис для игры в мафию состоит из игрового сервера, расположенного в [game-server](https://github.com/cherepasshka/mafia-game/tree/grapgql/game-server), graphql сервера, расположенного в [scoreboard-service](https://github.com/cherepasshka/mafia-game/tree/grapgql/scoreboard-service), чат-сервера, расположенного в [chat-server](https://github.com/cherepasshka/mafia-game/tree/grapgql/chat-server) и клиента, расположенного в [client](https://github.com/cherepasshka/mafia-game/tree/grapgql/client). Докер образы серверов выложены в [dockerhub](https://hub.docker.com/repository/docker/cherepashka/soa-practice-5)
 
 <a name="usage"></a> 
 ## Использование
@@ -63,4 +64,85 @@ curl -X GET http://127.0.0.1:9001/users/1
 Получение ссылки на pdf страницу профилей пользователей с логином `user_1`, `user_2` и `user_3` (таким образом можно получить профили сколки угодно пользователей):
 ```bash
 curl -X GET http://127.0.0.1:9001/users/?logins=user_1,user_2,user_3
+```
+
+<a name="scoreboards"></a> 
+## Доски текущих и прошедших игр
+По умолчанию на порту 9002 (можно поменять через переменную окружения в docker-compose.yaml) поднимается сервер, который принимает запросы для GraphQL.
+
+Удобнее всего с ним взаимодействовать из браузера (после запуска сервиса доступен http://localhost:9002), но можно слать запросы и как-то по-другому (например через `curl`), тогда адресс, который следует использовать для отправки запроса: http://scoreboard-service-server:9002/query
+
+### Просмотр нескольких скорбордов
+Можно просматривать созданные скорборды, пример запроса для браузерного GUI.
+
+Например, чтобы получить 2 скорборда, для каждого из которых будут указаны все относящиеся к нему комментарии, список игроков, дата начала игры, победитель игровой сессии, а также ID скорборда нужно сделать слудующий запрос:
+
+Сам запрос:
+```
+query Scoreboards($limit:Int) {
+	Scoreboards(limit:$limit) {
+    related{
+      user
+      text
+    }
+    startedAt
+    players
+    winner
+    id
+  }
+}
+```
+Переменные для запроса:
+```json
+{
+  "limit": 2
+}
+```
+
+### Просмотр одного скорбордов
+Аналогично чтобы получить скорборд по его ID, в котором будут указаны все относящиеся к нему комментарии, список игроков, дата начала игры, победитель игровой сессии, а также ID скорборда нужно сделать слудующий запрос:
+
+Сам запрос:
+```
+query Scoreboard($id:ID!) {
+  Scoreboard(id:$id) {
+    related {
+      createdAt
+      user
+      text
+    }
+    players
+    winner
+    id
+  }
+}
+```
+Переменные для запроса:
+```json
+{
+  "id": "1"
+}
+```
+
+### Создание комментария
+Чтобы создать комментарий и указать его автора необходимо выполнить следующий запрос:
+Сам запрос:
+```
+mutation CreateComment($input:NewComment!) {
+  createComment(input:$input){
+    text
+    user
+    scoreboardID
+  }
+}
+```
+Переменные для запроса:
+```json
+{
+  "input": {
+    "text": "{comment text}",
+    "user": "{user login}",
+    "scoreboardID": "{id}"
+  }
+}
 ```
