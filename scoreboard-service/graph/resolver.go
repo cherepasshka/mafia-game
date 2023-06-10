@@ -1,6 +1,10 @@
 package graph
 
-import "soa.mafia-game/scoreboard-service/graph/model"
+import (
+	"fmt"
+
+	"soa.mafia-game/scoreboard-service/graph/model"
+)
 
 // This file will not be regenerated automatically.
 //
@@ -11,11 +15,12 @@ type Resolver struct {
 	Comments         map[string]model.Comment
 }
 
-func (r *Resolver) AddCommentRelation(comment model.Comment) {
+func (r *Resolver) AddCommentRelation(comment model.Comment) error {
 	scoreboard, exists := r.ScoreboardsStore[comment.ScoreboardID]
 	if !exists {
-		scoreboard = model.Scoreboard{Related: make([]*model.Comment, 0)}
+		return fmt.Errorf("scoreboard %v not found", comment.ScoreboardID)
 	}
 	scoreboard.Related = append(scoreboard.Related, &comment)
 	r.ScoreboardsStore[comment.ScoreboardID] = scoreboard
+	return nil
 }

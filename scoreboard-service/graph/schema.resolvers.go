@@ -19,10 +19,10 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 		Text:         input.Text,
 		User:         input.User,
 	}
-
-	// if n == 0 {
-	// 	r.Resolver.Comments = make(map[string]model.Comment)
-	// }
+	err := r.AddCommentRelation(comment)
+	if err != nil {
+		return nil, err
+	}
 	n := len(r.Resolver.Comments)
 	id := input.ID
 	if id != nil {
@@ -36,7 +36,7 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.NewCom
 		comment.ID = nid
 		r.Resolver.Comments[nid] = comment
 	}
-	r.AddCommentRelation(comment)
+	
 	return &comment, nil
 }
 
