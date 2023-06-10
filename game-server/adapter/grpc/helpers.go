@@ -1,13 +1,19 @@
 package mafia_server
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
+	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mafia_domain "soa.mafia-game/game-server/domain/mafia-game"
 	"soa.mafia-game/game-server/domain/models/party"
+	"soa.mafia-game/game-server/domain/models/scoreboard"
 	proto "soa.mafia-game/proto/mafia-game"
 )
 
@@ -98,6 +104,85 @@ func (adapter *ServerAdapter) LeaveSession(ctx context.Context, request *proto.D
 	return &proto.LeaveSessionResponse{Success: success}, nil
 }
 
+func (adapter *ServerAdapter) UpdateScoreboard(partyId int) {
+	adapter.score_guard.Lock()
+	defer adapter.score_guard.Unlock()
+	url := os.Getenv("GRAPHQL_ADDRESS")
+	scoreboard := adapter.scoreboards[partyId]
+	winner := adapter.game.Winner(partyId)
+	if winner == proto.Roles_Civilian {
+		scoreboard.Winner = "civilians"
+	} else {
+		scoreboard.Winner = "mafia"
+	}
+	query := `
+	mutation CreateScoreboard($input:NewScoreboard!) {
+		createScoreboard(input:$input) {
+		  id
+		}
+	}
+ 	`
+	requestBody := map[string]interface{}{
+		"query": query,
+		"variables": map[string]interface{}{
+			"input": scoreboard,
+		},
+	}
+
+	jsonValue, _ := json.Marshal(requestBody)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonValue))
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+}
+
+func (adapter *ServerAdapter) CreateScoreboard(partyId int) {
+	url := os.Getenv("GRAPHQL_ADDRESS")
+	scoreboard := scoreboard.Scoreboard{
+		StartedAt: time.Now(),
+		Players:   adapter.game.GetMembers(partyId),
+		Winner:    "-",
+	}
+
+	query := `
+	mutation CreateScoreboard($input:NewScoreboard!) {
+		createScoreboard(input:$input) {
+		  id
+		}
+	}
+ 	`
+	requestBody := map[string]interface{}{
+		"query": query,
+		"variables": map[string]interface{}{
+			"input": scoreboard,
+		},
+	}
+
+	jsonValue, _ := json.Marshal(requestBody)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonValue))
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	var data = result["data"].(map[string]interface{})
+	var creationResp = data["createScoreboard"].(map[string]interface{})
+	id := creationResp["id"]
+
+	adapter.score_guard.Lock()
+	defer adapter.score_guard.Unlock()
+	scoreboard.Id = id.(string)
+	adapter.scoreboards[partyId] = &scoreboard
+}
+
 func (adapter *ServerAdapter) ListConnections(req *proto.DefaultRequest, stream proto.MafiaService_ListConnectionsServer) error {
 	adapter.game.EnterSession(req.Login)
 	_, exist := adapter.connections[req.Login]
@@ -112,8 +197,10 @@ func (adapter *ServerAdapter) ListConnections(req *proto.DefaultRequest, stream 
 		msgChannel <- adapter.game.Events[i]
 	}
 	if adapter.game.SessionReady(req.Login) {
-		if adapter.game.DistributeRoles(adapter.game.GetParty(req.Login)) {
-			adapter.SendReadinessNotification(adapter.game.GetMembers(adapter.game.GetParty(req.Login)))
+		partyId := adapter.game.GetParty(req.Login)
+		if adapter.game.DistributeRoles(partyId) {
+			adapter.SendReadinessNotification(adapter.game.GetMembers(partyId))
+			go adapter.CreateScoreboard(partyId)
 		}
 	}
 	for {
@@ -200,8 +287,8 @@ func (adapter *ServerAdapter) StartDay(ctx context.Context, req *proto.DefaultRe
 		}, nil
 	}
 	response := &proto.DayResponse{
-		Victim: victim,
-		Alive:  adapter.game.GetAliveMembers(adapter.game.GetParty(req.Login)),
+		Victim:        victim,
+		Alive:         adapter.game.GetAliveMembers(adapter.game.GetParty(req.Login)),
 		SessionStatus: &proto.GameSessionStatus{AllConnected: true},
 	}
 	// handle players exits
@@ -215,7 +302,7 @@ func (adapter *ServerAdapter) VoteForMafia(ctx context.Context, req *proto.VoteF
 	response := &proto.VoteForMafiaResponse{
 		KilledUser:     ghost,
 		KilledUserRole: adapter.game.GetRole(ghost),
-		SessionStatus:         &proto.GameSessionStatus{AllConnected: true},
+		SessionStatus:  &proto.GameSessionStatus{AllConnected: true},
 	}
 
 	// handle players exits
@@ -224,15 +311,18 @@ func (adapter *ServerAdapter) VoteForMafia(ctx context.Context, req *proto.VoteF
 }
 
 func (adapter *ServerAdapter) GetStatus(ctx context.Context, req *proto.DefaultRequest) (*proto.StatusResponse, error) {
+	partyId := adapter.game.GetParty(req.Login)
 	response := &proto.StatusResponse{
-		Alive: adapter.game.GetAliveMembers(adapter.game.GetParty(req.Login)),
+		Alive: adapter.game.GetAliveMembers(partyId),
 		GameStatus: &proto.GameStatus{
-			Active: adapter.game.IsActive(adapter.game.GetParty(req.Login)),
-			Winner: adapter.game.Winner(adapter.game.GetParty(req.Login)),
+			Active: adapter.game.IsActive(partyId),
+			Winner: adapter.game.Winner(partyId),
 		},
 		SessionStatus: &proto.GameSessionStatus{AllConnected: true},
 	}
-
+	if !response.GameStatus.Active {
+		go adapter.UpdateScoreboard(partyId)
+	}
 	// handle players exits
 	response.SessionStatus.AllConnected = len(adapter.game.GetMembers(adapter.game.GetParty(req.Login))) == party.PARTY_SIZE
 	return response, nil

@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	mafia_domain "soa.mafia-game/game-server/domain/mafia-game"
+	"soa.mafia-game/game-server/domain/models/scoreboard"
 	usersdb "soa.mafia-game/game-server/domain/storage"
 	proto "soa.mafia-game/proto/mafia-game"
 )
@@ -14,6 +15,9 @@ type ServerAdapter struct {
 	connections map[string]chan mafia_domain.Event
 	guard       sync.Mutex
 	conn_guard  sync.Mutex
+
+	score_guard sync.Mutex
+	scoreboards map[int]*scoreboard.Scoreboard
 
 	victims       map[string]chan string
 	moved_players map[int]int
@@ -26,5 +30,7 @@ func New(users *usersdb.Storage, brokerServers string) (*ServerAdapter, error) {
 
 		victims:       make(map[string]chan string),
 		moved_players: make(map[int]int),
+
+		scoreboards: make(map[int]*scoreboard.Scoreboard),
 	}, nil
 }

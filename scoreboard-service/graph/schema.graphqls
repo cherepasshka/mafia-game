@@ -1,0 +1,41 @@
+type Scoreboard {
+    id: ID!
+    startedAt: Timestamp!
+    players: [String]
+    related(limit: Int = 25, offset: Int = 0): [Comment!]!
+    winner: String!
+}
+
+type Comment {
+    id: ID!
+    scoreboardID: ID!
+    text: String!
+    user: String!
+    createdAt: Timestamp!
+}
+
+input NewComment {
+    id: ID
+    scoreboardID: ID!
+    text: String!
+    user: String!
+}
+
+input NewScoreboard {
+  id: ID
+  startedAt: Timestamp!
+  players: [String]
+  winner: String!
+}
+
+type Mutation {
+    createComment(input: NewComment!): Comment!
+    createScoreboard(input: NewScoreboard!): Scoreboard!
+}
+
+type Query {
+    Scoreboards(limit: Int = 25): [Scoreboard!]!
+    Scoreboard(id: ID!): Scoreboard
+}
+
+scalar Timestamp
