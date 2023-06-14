@@ -42,23 +42,23 @@ go run client/cmd/main.go
 Добавить пользователя можно с помощью `curl`, важно, что поля пользователя (логин, гендер, почту, картинку) нужно передавать как переменную формы (флаг `-F`).
 Создание пользователя с логином `user_1`, почтой `user_1@example.com`, гендером `female` и с аватаром, который находится в файле на компьютере клиента `picture.jpg` (поддерживаются только картинки формата jpg):
 ```bash
-curl -X POST -F "image=@picture.jpg" -F "login=user_1" -F "email=user_1@example.com" -F "gender=female" http://localhost:9001/users/1
+curl -X POST -F "image=@picture.jpg" -F "login=user_1" -F "email=user_1@example.com" -F "gender=female" http://localhost:9001/users/user_1
 ```
 Любое из полей можно опустить.
 ### Обновление пользователя
 Выполняется аналогично, но используется http метод `PUT`
 ```bash
-curl -X PUT -F "image=@picture.jpg" -F "login=user_1" -F "email=user_1@example.com" -F "gender=female" http://localhost:9001/users/1
+curl -X PUT -F "image=@picture.jpg" -F "login=user_1" -F "email=user_1@example.com" -F "gender=female" http://localhost:9001/users/user_1
 ```
 ### Удаление пользователя
 Удаление пользователя с логином `user_1`:
 ```bash
-curl -X DELETE http://127.0.0.1:9001/users/1
+curl -X DELETE http://127.0.0.1:9001/users/user_1
 ```
 ### Получение пользователя
 Получение ссылки на pdf страницу профиля пользователя с логином `user_1`:
 ```bash
-curl -X GET http://127.0.0.1:9001/users/1
+curl -X GET http://127.0.0.1:9001/users/user_1
 ```
 Получение ссылки на pdf страницу профилей пользователей с логином `user_1`, `user_2` и `user_3` (таким образом можно получить профили сколки угодно пользователей):
 ```bash
